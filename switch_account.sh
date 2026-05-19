@@ -1,0 +1,13 @@
+#!/bin/bash
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "BEFORE SWITCHING ACCOUNTS"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "1. Ask Claude: Generate auto update block now."
+echo "2. Run: python3 update.py --auto"
+echo "3. Ask Claude: Generate SESSION.md update now."
+echo "4. Update SESSION.md."
+echo "5. git add . && git commit -m 'switch' && git push"
+echo "6. New account: git pull"
+echo "               python3 context.py --mini"
+echo "               Paste PROMPT.md + mini context + SESSION.md"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

@@ -1,0 +1,15 @@
+ACTIVE COURSE: CMU 15-213
+ACTIVE LAB: L0 C Programming Lab
+CURRENT PROJECT: 0
+PHASE: 1
+EMOTIONAL STATE: clear
+PERSONAL RULE: [write your one sentence here]
+
+LAST OUTPUT:
+None yet.
+
+UNANSWERED QUESTIONS:
+None yet.
+
+UNCLEAR CONCEPTS:
+None yet.

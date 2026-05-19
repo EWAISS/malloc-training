@@ -1,0 +1,58 @@
+=== CMU 15-213 ===
+L0 C Programming Lab:
+https://www.cs.cmu.edu/~213/labs/cprogramminglab.pdf
+
+L1 Data Lab:
+https://www.cs.cmu.edu/~213/labs/datalab.pdf
+
+L5 Malloc Lab recitation (m25):
+https://www.cs.cmu.edu/afs/cs/academic/class/15213-m25/www/recitations/Malloclab-Extended.pdf
+
+L7 Proxy Lab recitation (m25):
+https://www.cs.cmu.edu/afs/cs/academic/class/15213-m25/www/recitations/Proxylab-Extended.pdf
+
+Recitations directory:
+https://www.cs.cmu.edu/afs/cs/academic/class/15213-m25/www/recitations/
+
+=== CMU 15-418 ===
+Assignment 1:
+https://www.cs.cmu.edu/afs/cs/academic/class/15418-s23/www/labs/asst1.pdf
+
+Assignment 2:
+https://www.cs.cmu.edu/afs/cs/academic/class/15418-s23/www/labs/asst2.pdf
+
+=== Stanford CS144 ===
+https://cs144.github.io/assignments/check0.pdf
+https://cs144.github.io/assignments/check1.pdf
+https://cs144.github.io/assignments/check2.pdf
+https://cs144.github.io/assignments/check3.pdf
+https://cs144.github.io/assignments/check4.pdf
+https://cs144.github.io/assignments/check5.pdf
+https://cs144.github.io/assignments/check6.pdf
+https://cs144.github.io/assignments/check7.pdf
+
+=== MIT 6.828 ===
+https://pdos.csail.mit.edu/6.828/2021/labs/util.html
+https://pdos.csail.mit.edu/6.828/2021/labs/syscall.html
+https://pdos.csail.mit.edu/6.828/2021/labs/pgtbl.html
+https://pdos.csail.mit.edu/6.828/2021/labs/traps.html
+https://pdos.csail.mit.edu/6.828/2021/labs/cow.html
+https://pdos.csail.mit.edu/6.828/2021/labs/thread.html
+https://pdos.csail.mit.edu/6.828/2021/labs/net.html
+https://pdos.csail.mit.edu/6.828/2021/labs/lock.html
+https://pdos.csail.mit.edu/6.828/2021/labs/fs.html
+https://pdos.csail.mit.edu/6.828/2021/labs/mmap.html
+
+=== MIT 6.5840 ===
+https://pdos.csail.mit.edu/6.824/labs/lab-mr.html
+https://pdos.csail.mit.edu/6.824/labs/lab-kvsrv.html
+https://pdos.csail.mit.edu/6.824/labs/lab-raft.html
+https://pdos.csail.mit.edu/6.824/labs/lab-kvraft.html
+https://pdos.csail.mit.edu/6.824/labs/lab-shard.html
+
+=== CMU 15-445 ===
+https://15445.courses.cs.cmu.edu/spring2026/project0/
+https://15445.courses.cs.cmu.edu/spring2026/project1/
+https://15445.courses.cs.cmu.edu/spring2026/project2/
+https://15445.courses.cs.cmu.edu/spring2026/project3/
+https://15445.courses.cs.cmu.edu/spring2026/project4/
