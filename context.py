@@ -349,7 +349,7 @@ def generate_context():
         print("  None yet in this lab.")
 
     # ── RECENT PROJECTS ─────────────────────────
-    print(f"\nRECENT PROJECTS — {active_lab} (last 3):")
+    print(f"\nRECENT PROJECTS — {active_lab} (last 5):")
     c.execute(
         '''SELECT number, name, concept, status,
                   what_worked, what_failed, handoff,
@@ -368,7 +368,7 @@ def generate_context():
             print(f"  Appears in: {p[7]}")
 
     # ── PROJECT NARRATIVES ──────────────────────
-    print(f"\nPROJECT DESIGN NARRATIVES (last 3):")
+    print(f"\nPROJECT DESIGN NARRATIVES (last 5):")
     c.execute(
         '''SELECT pn.project_number, p.name,
                   pn.why_designed_this_way,
