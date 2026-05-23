@@ -53,6 +53,11 @@ required_files = [
     ('estimate_tokens.sh',  'Run step 12 from setup'),
     ('EXTRACTION_PROMPT.txt','Run step 13 from setup'),
     ('handout_urls.txt',    'Run step 13 from setup'),
+    ('CURRICULUM.md',        'Run: ask Claude to generate curriculum'),
+    ('CURRICULUM_REASONING.md','Run: ask Claude to generate reasoning'),
+    ('curriculum_status.py', 'Download from setup files'),
+    ('update_full_detail.py','Download from setup files'),
+    ('resolve_gap.py',       'Download from setup files'),
 ]
 
 for filename, fix in required_files:

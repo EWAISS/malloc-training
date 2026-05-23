@@ -587,6 +587,89 @@ def generate_context():
     print("\n" + "=" * 60)
     conn.close()
 
+    # ── CURRICULUM STATUS ────────────────────────
+    curr_path = os.path.join(
+        os.path.expanduser('~/projects/malloc-training'),
+        'CURRICULUM.md')
+    reason_path = os.path.join(
+        os.path.expanduser('~/projects/malloc-training'),
+        'CURRICULUM_REASONING.md')
+
+    if os.path.exists(curr_path):
+        # Count pending projects
+        pending = []
+        current = {}
+        try:
+            conn3 = sqlite3.connect(db_path)
+            c3 = conn3.cursor()
+            c3.execute('SELECT number FROM projects')
+            done_nums = {row[0] for row in c3.fetchall()}
+            conn3.close()
+
+            with open(curr_path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line.startswith('#'):
+                        continue
+                    if line.startswith('PROJECT '):
+                        if current:
+                            pending.append(current)
+                        try:
+                            num = int(line.split()[1])
+                            current = {'number': num}
+                        except (IndexError, ValueError):
+                            current = {}
+                    elif ':' in line and current:
+                        key, _, value = line.partition(':')
+                        current[key.strip().lower()] = value.strip()
+            if current:
+                pending.append(current)
+
+            not_done = [p for p in pending
+                        if p.get('number') not in done_nums]
+            next_p = not_done[0] if not_done else None
+
+            print(f"\nCURRICULUM STATUS:")
+            print(f"  Planned  : {len(pending)} projects")
+            print(f"  Completed: {len(done_nums)}")
+            print(f"  Pending  : {len(not_done)}")
+
+            if next_p:
+                print(f"\nNEXT PROJECT FROM CURRICULUM:")
+                print(f"  Project {next_p.get('number')} — "
+                      f"{next_p.get('name', '?')}")
+                print(f"  Concept : {next_p.get('concept', '?')}")
+                print(f"  Gap     : {next_p.get('gap', '?')}")
+
+        except Exception as e:
+            print(f"  (Could not parse CURRICULUM.md: {e})")
+
+    if os.path.exists(reason_path):
+        print(f"\nNEXT PROJECT REASONING:")
+        try:
+            lines_r = []
+            in_next = False
+            count_r = 0
+            with open(reason_path) as f:
+                for line in f:
+                    if line.startswith('NEXT PROJECT:') and count_r < 1:
+                        in_next = True
+                        count_r += 1
+                        lines_r.append(line.rstrip())
+                    elif line.startswith('NEXT PROJECT:') and count_r >= 1:
+                        break
+                    elif in_next and not line.startswith('#'):
+                        lines_r.append(line.rstrip())
+            if lines_r:
+                for l in lines_r[:10]:
+                    print(f"  {l}")
+            else:
+                print("  No reasoning for next project yet.")
+                print("  Ask Claude to generate CURRICULUM_REASONING.md")
+        except Exception as e:
+            print(f"  (Could not read CURRICULUM_REASONING.md: {e})")
+
+
     # ── VERIFICATION BLOCK ──────────────────────
     # Reopen briefly to print this last
     conn2 = sqlite3.connect(db_path)
