@@ -407,14 +407,27 @@ def step_verification():
     else:
         lines.append("Q4 Active weakness : (none recorded yet)")
 
+    # Q5 — curriculum reasoning check
+    # Only shown if CURRICULUM_REASONING.md exists
+    reasoning_path = os.path.join(PROJ, 'CURRICULUM_REASONING.md')
+    if os.path.exists(reasoning_path):
+        next_num = (last[0] + 1) if last else 1
+        lines.append(f"Q5 Why does Project {next_num} come next : ")
+        lines.append(f"    [Answer must reference CURRICULUM_REASONING.md"
+                     f" entry for Project {next_num}]")
+        lines.append(f"    [Vague answer = Claude has not read the"
+                     f" reasoning file]")
+
     lines.append("─" * 58)
     lines.append("")
     lines.append("Now paste into Claude:")
     lines.append("  1. PROMPT.md contents")
     lines.append("  2. The context output above (Step 4)")
     lines.append("  3. SESSION.md contents")
+    lines.append("  4. CURRICULUM.md (if exists)")
+    lines.append("  5. CURRICULUM_REASONING.md (if exists)")
     lines.append("")
-    lines.append("Claude must output its four answers before teaching.")
+    lines.append("Claude must output all answers before teaching.")
     lines.append("Check them against the correct answers above.")
     lines.append("If any answer is wrong or vague: stop, repaste, "
                  "reverify.")

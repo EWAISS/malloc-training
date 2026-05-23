@@ -272,8 +272,7 @@ with open(test_py, 'w') as f:
 ''')
 
 result = subprocess.run(
-    ['python3', 'autograde.py', '0',
-     test_c, test_py],
+    ['python3', 'autograde.py', '0', test_c],
     cwd=BASE,
     capture_output=True, text=True)
 check("autograder runs correctly",

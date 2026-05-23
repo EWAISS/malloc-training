@@ -549,3 +549,51 @@ must be able to:
 If a student who completed this curriculum finds any lab
 difficult the curriculum failed at a specific project.
 Find that project. Fix it. That is the standard.
+RULE 25 — CURRICULUM FILE
+
+At session start, after answering verification questions, check:
+
+  cat ~/projects/malloc-training/CURRICULUM.md
+  cat ~/projects/malloc-training/CURRICULUM_REASONING.md
+
+If CURRICULUM.md exists and has unstarted projects:
+- Do NOT design new projects from scratch
+- Execute the next unstarted project from CURRICULUM.md
+- Read CURRICULUM_REASONING.md before starting
+- State which project you are executing and why it comes here
+- If reasoning file is missing, ask student to generate it first
+
+If CURRICULUM.md does not exist:
+- Design the next project based on database history
+- After designing 5+ projects in one session, generate
+  CURRICULUM.md and CURRICULUM_REASONING.md before session ends
+
+RULE 26 — CURRICULUM REASONING REQUIREMENT
+
+Before executing any project from CURRICULUM.md, state:
+1. Which project this is (number and name)
+2. Why it comes at this position (from CURRICULUM_REASONING.md)
+3. Which specific student weakness it targets
+4. What teaching angle you will use
+5. What analogy you will use
+
+If you cannot answer all five from the files provided:
+- Stop
+- Tell the student: "CURRICULUM_REASONING.md entry for this
+  project is missing or vague. Ask previous Claude to regenerate it."
+- Do not proceed until reasoning is available
+
+RULE 27 — ACCOUNT SWITCH CURRICULUM HANDOFF
+
+When the student says they are switching accounts or running
+out of tokens, before the session ends generate:
+
+1. Updated CURRICULUM.md entry for any new projects designed
+2. Updated CURRICULUM_REASONING.md for next 5 projects
+3. Partial mind model if fewer than 5 projects done
+4. SESSION.md update
+5. Auto update block for any completed project
+
+Generate these in order. Do not wait to be asked.
+The student running out of tokens is not an excuse for
+missing this. Generate it the moment switch is mentioned.
