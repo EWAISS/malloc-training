@@ -16,6 +16,7 @@ UNION ALL SELECT 'adversarial_exams', COUNT(*) FROM adversarial_exams
 UNION ALL SELECT 'quiz_records', COUNT(*) FROM quiz_records
 UNION ALL SELECT 'lab_handouts', COUNT(*) FROM lab_handouts
 UNION ALL SELECT 'external_validation', COUNT(*) FROM external_validation
+UNION ALL SELECT 'lab_transitions', COUNT(*) FROM lab_transitions
 UNION ALL SELECT 'mood_logs', COUNT(*) FROM mood_logs;"
 
 echo ""

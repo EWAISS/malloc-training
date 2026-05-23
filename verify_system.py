@@ -58,6 +58,9 @@ required_files = [
     ('curriculum_status.py', 'Download from setup files'),
     ('update_full_detail.py','Download from setup files'),
     ('resolve_gap.py',       'Download from setup files'),
+    ('lab_transition.py',    'Download from setup files'),
+    ('LAB_HISTORY.md',       'Create empty file in project root'),
+    ('MULTI_TOOL_PROTOCOL.md','Download from setup files'),
 ]
 
 for filename, fix in required_files:
@@ -136,6 +139,7 @@ required_tables = [
     'lab_handouts',
     'external_validation',
     'mood_logs',
+    'lab_transitions',
 ]
 
 try:

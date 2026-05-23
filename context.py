@@ -587,6 +587,26 @@ def generate_context():
     print("\n" + "=" * 60)
     conn.close()
 
+
+    # ── LAB TRANSITION HISTORY ───────────────────
+    try:
+        c.execute(
+            '''SELECT lab, next_lab, concepts_owned,
+                      carried_forward, watch_for, key_analogy
+               FROM lab_transitions
+               ORDER BY transitioned_at DESC LIMIT 3''')
+        transitions = c.fetchall()
+        if transitions:
+            print(f"\nCOMPLETED LAB TRANSITIONS (last 3):")
+            for t in transitions:
+                print(f"\n  {t[0]} → {t[1]}")
+                print(f"  Owned         : {t[2]}")
+                print(f"  Carried forward: {t[3]}")
+                print(f"  Watch for     : {t[4]}")
+                print(f"  Key analogy   : {t[5]}")
+    except Exception:
+        pass
+
     # ── CURRICULUM STATUS ────────────────────────
     curr_path = os.path.join(
         os.path.expanduser('~/projects/malloc-training'),

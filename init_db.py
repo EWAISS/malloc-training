@@ -65,6 +65,21 @@ def migrate():
     except sqlite3.OperationalError:
         print("OK: transfer_exams.adversarial_gap_report exists")
 
+
+    c.execute(
+        '''CREATE TABLE IF NOT EXISTS lab_transitions (
+            id INTEGER PRIMARY KEY,
+            lab TEXT,
+            course TEXT,
+            concepts_owned TEXT,
+            carried_forward TEXT,
+            watch_for TEXT,
+            key_analogy TEXT,
+            full_summary TEXT,
+            next_lab TEXT,
+            transitioned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+
     conn.commit()
     conn.close()
 
