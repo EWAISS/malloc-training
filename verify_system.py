@@ -43,7 +43,6 @@ required_files = [
     ('get_handout.py',      'Run step 10 from setup'),
     ('update_exam.py',      'Run step 11 from setup'),
     ('start_session.py',    'Run start_session setup'),
-    ('autograde.py',        'Run autograder setup'),
     ('db_check.py',         'Run fix 1 from failure modes'),
     ('adversary.py',        'Run fix 4 from failure modes'),
     ('mood_check.py',       'Run fix 7 from failure modes'),
@@ -130,7 +129,6 @@ required_tables = [
     'adversarial_exams',
     'quiz_records',
     'lab_handouts',
-    'autograde_results',
     'external_validation',
     'mood_logs',
 ]
@@ -246,36 +244,6 @@ for cmd, fix in scripts_to_test:
     check(f"runs: {' '.join(cmd)}",
           result.returncode == 0, fix)
 
-# ─── AUTOGRADER TEST ─────────────────────────────
-section("11. AUTOGRADER SMOKE TEST")
-
-test_c = '/tmp/verify_autograde_test.c'
-test_py = '/tmp/verify_autograde_tests.py'
-
-with open(test_c, 'w') as f:
-    f.write('''#include <stdio.h>
-int main() {
-    printf("hello autograde\\n");
-    return 0;
-}
-''')
-
-with open(test_py, 'w') as f:
-    f.write('''TESTS = [
-    {
-        "name": "basic_output",
-        "input": "",
-        "expected_output": "hello autograde",
-        "expected_exit": 0
-    }
-]
-''')
-
-result = subprocess.run(
-    ['python3', 'autograde.py', '0', test_c],
-    cwd=BASE,
-    capture_output=True, text=True)
-check("autograder runs correctly",
       result.returncode == 0,
       "Check autograde.py — smoke test failed")
 
