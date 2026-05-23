@@ -355,7 +355,7 @@ def generate_context():
                   what_worked, what_failed, handoff,
                   appears_in_future_labs
            FROM projects WHERE lab = ?
-           ORDER BY number DESC LIMIT 3''',
+           ORDER BY number DESC LIMIT 5''',
         (active_lab,))
     for p in c.fetchall():
         print(f"\n  Project {p[0]} — {p[1]}")
@@ -379,7 +379,7 @@ def generate_context():
            FROM project_narrative pn
            JOIN projects p ON p.number = pn.project_number
            WHERE p.lab = ?
-           ORDER BY pn.project_number DESC LIMIT 3''',
+           ORDER BY pn.project_number DESC LIMIT 5''',
         (active_lab,))
     narratives = c.fetchall()
     if narratives:
