@@ -89,6 +89,25 @@ def check_database():
     except sqlite3.OperationalError:
         pass  # table may not exist yet
 
+
+    # Lab transition missing for completed labs
+    try:
+        c.execute(
+            '''SELECT DISTINCT p.lab
+               FROM projects p
+               LEFT JOIN lab_transitions lt ON lt.lab = p.lab
+               WHERE lt.id IS NULL
+               GROUP BY p.lab
+               HAVING COUNT(p.id) >= 10''')
+        missing = c.fetchall()
+        for mt in missing:
+            warnings.append(
+                f"NO LAB TRANSITION: '{mt[0]}' has 10+ projects "
+                f"but no transition summary. "
+                f"Run: python3 lab_transition.py")
+    except sqlite3.OperationalError:
+        pass
+
     conn.close()
 
     print("=" * 55)
