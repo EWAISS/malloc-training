@@ -249,8 +249,6 @@ for cmd, fix in scripts_to_test:
     check(f"runs: {' '.join(cmd)}",
           result.returncode == 0, fix)
 
-      result.returncode == 0,
-      "Check autograde.py — smoke test failed")
 
 # ─── SUMMARY ─────────────────────────────────────
 print()
