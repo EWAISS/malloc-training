@@ -3,7 +3,7 @@ ACTIVE LAB: L0 C Programming Lab
 CURRENT PROJECT: 0
 PHASE: 1
 EMOTIONAL STATE: clear
-PERSONAL RULE: [write your one sentence here]
+PERSONAL RULE: I will write my prediction and explain my reasoning out loud before I run any code or ask Claude anything.
 
 LAST OUTPUT:
 None yet.
