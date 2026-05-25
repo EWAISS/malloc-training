@@ -136,3 +136,72 @@ NEXT PROJECT: 20
   Teaching angle   : Always malloc(sizeof(the_struct_not_the_pointer)).
   Analogy          : Order a box big enough to fit the object not big enough to fit the label.
   Watch for        : Any hardcoded size in a malloc call.
+
+NEXT PROJECT: 21
+  Why now          : All 20 foundation projects complete. Student now implements the first real queue function. queue_new is the simplest — allocate and initialize. Sets the pattern for every function that follows.
+  Weakness targeted: Student does not initialize fields after malloc. Uninitialized head pointer causes immediate crash.
+  Teaching angle   : malloc gives you raw bytes. You must set every field yourself. Nothing is zeroed.
+  Analogy          : You get an empty form. You must fill in every box. Blank boxes cause errors later.
+  Watch for        : Missing head = NULL after malloc. Missing size = 0. Missing tail = NULL.
+
+NEXT PROJECT: 22
+  Why now          : Student can create a queue. Must now free one correctly. Order matters — free nodes before freeing the struct or you lose the pointer to the nodes forever.
+  Weakness targeted: Student frees queue_t first then cannot reach the nodes.
+  Teaching angle   : Free from the inside out. Nodes first. Struct last.
+  Analogy          : Empty the house before demolishing it. Demolish first and everything inside is lost.
+  Watch for        : Student freeing q before freeing q->head chain.
+
+NEXT PROJECT: 23
+  Why now          : Student can create and free. Now implements the first insert. queue_insert_head is the core operation. Every step must be in exact order or the list is corrupted.
+  Weakness targeted: Student updates head before saving old head. Old list is lost.
+  Teaching angle   : Save old head first. Point new node to old head. Then update head to new node.
+  Analogy          : You are adding a new first car to a train. Attach it to the existing train first. Then declare it the new front.
+  Watch for        : head = new_node before new_node->next = old_head. List lost permanently.
+
+NEXT PROJECT: 24
+  Why now          : Student can insert at head. Now must insert at tail in O(1). Naive implementation walks entire list. Fails at 1M elements. Tail pointer is the solution.
+  Weakness targeted: Student walks list to find tail on every insert.
+  Teaching angle   : tail pointer always points to last node. Update it on every insert. Never walk the list.
+  Analogy          : A bouncer at the back of the line always knows who is last. No need to walk from the front.
+  Watch for        : Any loop inside queue_insert_tail. Immediate O(n) failure.
+
+NEXT PROJECT: 25
+  Why now          : Student owns O(1) tail insert. Same pattern applies to size. Naive size counts nodes. Fails performance test. Stored counter is the solution.
+  Weakness targeted: Student traverses list to count nodes on every size call.
+  Teaching angle   : size field in queue_t is incremented on insert decremented on remove. Return it directly.
+  Analogy          : You already derived this at session start — the supermarket manager who keeps a running count.
+  Watch for        : Any loop inside queue_size. Immediate O(n) failure.
+
+NEXT PROJECT: 26
+  Why now          : Student can insert. Now must remove. queue_remove_head must save the string out before freeing the node. Order is critical. Free first means data is gone.
+  Weakness targeted: Student frees node before copying string out of it.
+  Teaching angle   : Copy the string out first. Then free the node. Never touch freed memory.
+  Analogy          : Read the document before shredding it. Shred first and the information is gone.
+  Watch for        : free(node) before strncpy(buf, node->value, bufsize).
+
+NEXT PROJECT: 27
+  Why now          : All six other functions work. Now implements reverse. Must flip pointers in place. No allocation allowed. Walk list once with three pointers.
+  Weakness targeted: Student allocates new nodes violating lab constraint. Student loses list by not saving next before overwriting it.
+  Teaching angle   : Three pointer technique. prev cur next. Save next before overwriting cur->next.
+  Analogy          : Reversing a chain of arrows painted on boxes. Before repainting each arrow save where it currently points.
+  Watch for        : Student allocating any memory inside queue_reverse. Immediate lab violation.
+
+NEXT PROJECT: 28
+  Why now          : All functions implemented. Now stress-tests every function with NULL queue and empty queue inputs. Both cases are distinct. Both must be handled in every function.
+  Weakness targeted: Student handles one case but not the other. Traces crash on the unhandled case.
+  Teaching angle   : NULL queue means q is NULL. Empty queue means q is valid but q->head is NULL. Different checks.
+  Analogy          : NULL queue is a missing form. Empty queue is a blank form. Both exist. Both need handling.
+
+NEXT PROJECT: 29
+  Why now          : Student has a complete implementation. Now must learn to read ASan error reports. ASan is always running. Student must be able to find the bug from the report alone.
+  Weakness targeted: Student cannot read stack trace and fixes wrong location.
+  Teaching angle   : Frame 0 is innermost. Find first frame in your own code. That line is the bug location.
+  Analogy          : A call stack is a list of return addresses. The crime scene is always in your code not in the library.
+  Watch for        : Student fixing code in harness.c or qtest.c instead of queue.c.
+
+NEXT PROJECT: 30
+  Why now          : Everything is complete. Now runs all 15 traces with driver.py. This is the ground truth. Every trace must pass. Score is 100 or there is a remaining bug.
+  Weakness targeted: Student passes some traces and cannot diagnose which function is failing.
+  Teaching angle   : Each trace tests specific functions. Read the trace name. It tells you which function to debug.
+  Analogy          : Each trace is a specific test. The name is the clue. trace-01-ops tests basic operations.
+  Watch for        : Student guessing instead of reading the failing trace to identify which function is broken.
