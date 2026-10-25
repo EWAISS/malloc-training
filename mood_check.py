@@ -4,24 +4,30 @@ import sys
 from datetime import datetime
 
 
+def ask_number(prompt, cast):
+    """Re-ask until valid — a typo must not count as a good answer."""
+    while True:
+        try:
+            value = cast(input(prompt))
+            if value >= 0:
+                return value
+        except ValueError:
+            pass
+        print("  Please enter a number.")
+
+
 def mood_check():
     print("=" * 45)
     print("PRE-SESSION STATE CHECK")
     print("Answer honestly. These are facts, not feelings.")
     print("=" * 45)
 
-    try:
-        sleep = float(input("\nHours of sleep last night: "))
-    except ValueError:
-        sleep = 0.0
+    sleep = ask_number("\nHours of sleep last night: ", float)
 
     ate = input("Did you eat today? (yes/no): ").strip().lower()
 
-    try:
-        days_no_break = int(
-            input("Days since your last full rest day: "))
-    except ValueError:
-        days_no_break = 0
+    days_no_break = ask_number(
+        "Days since your last full rest day: ", int)
 
     # Score
     score = 0

@@ -62,23 +62,23 @@ def get_planned():
     return planned
 
 
-def get_next_reasoning():
-    """Pull next project reasoning from CURRICULUM_REASONING.md."""
+def get_next_reasoning(next_num):
+    """Pull reasoning for project next_num from CURRICULUM_REASONING.md."""
     if not os.path.exists(REASON_PATH):
         return None
 
     lines = []
     in_next = False
-    count = 0
 
     with open(REASON_PATH) as f:
         for line in f:
-            if line.startswith('NEXT PROJECT:') and count < 1:
-                in_next = True
-                count += 1
-                lines.append(line.rstrip())
-            elif line.startswith('NEXT PROJECT:') and count >= 1:
-                break
+            if line.startswith('NEXT PROJECT:'):
+                if in_next:
+                    break
+                num = line.split(':', 1)[1].strip()
+                in_next = num == str(next_num)
+                if in_next:
+                    lines.append(line.rstrip())
             elif in_next and line.strip() and \
                  not line.startswith('#'):
                 lines.append(line.rstrip())
@@ -166,7 +166,7 @@ def main():
         print("\n" + "─" * 58)
         print(f"NEXT UP: Project {next_project.get('number')} — "
               f"{next_project.get('name', '?')}")
-        reasoning = get_next_reasoning()
+        reasoning = get_next_reasoning(next_project.get('number'))
         if reasoning:
             print("\nREASONING (from CURRICULUM_REASONING.md):")
             print(reasoning)

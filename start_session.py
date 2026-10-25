@@ -64,6 +64,18 @@ def abort(reason):
     sys.exit(1)
 
 
+def ask_number(prompt, cast):
+    """Re-ask until valid — a typo must not count as a good answer."""
+    while True:
+        try:
+            value = cast(input(prompt))
+            if value >= 0:
+                return value
+        except ValueError:
+            pass
+        print("  Please enter a number.")
+
+
 # ─────────────────────────────────────────────
 # STEP 1 — MOOD CHECK
 # ─────────────────────────────────────────────
@@ -72,18 +84,12 @@ def step_mood():
     banner("STEP 1 / 5 — PRE-SESSION STATE CHECK")
     print("Answer honestly. These are facts, not feelings.\n")
 
-    try:
-        sleep = float(input("Hours of sleep last night: "))
-    except ValueError:
-        sleep = 0.0
+    sleep = ask_number("Hours of sleep last night: ", float)
 
     ate = input("Did you eat today? (yes/no): ").strip().lower()
 
-    try:
-        days_no_break = int(
-            input("Days since your last full rest day: "))
-    except ValueError:
-        days_no_break = 0
+    days_no_break = ask_number(
+        "Days since your last full rest day: ", int)
 
     score = 0
     if sleep >= 7:
@@ -411,7 +417,10 @@ def step_verification():
     # Only shown if CURRICULUM_REASONING.md exists
     reasoning_path = os.path.join(PROJ, 'CURRICULUM_REASONING.md')
     if os.path.exists(reasoning_path):
-        next_num = (last[0] + 1) if last else 1
+        # Numbering is global, not per lab — a new lab
+        # with no projects yet must not restart at 1
+        c.execute('SELECT MAX(number) FROM projects')
+        next_num = (c.fetchone()[0] or 0) + 1
         lines.append(f"Q5 Why does Project {next_num} come next : ")
         lines.append(f"    [Answer must reference CURRICULUM_REASONING.md"
                      f" entry for Project {next_num}]")

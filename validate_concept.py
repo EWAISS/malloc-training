@@ -53,6 +53,7 @@ def validate():
            LEFT JOIN external_validation ev
            ON ev.concept = con.name
            AND ev.project_number = con.project_number
+           AND ev.result = 'pass'
            WHERE con.status = 'owned'
            AND ev.id IS NULL
            ORDER BY con.project_number''')
@@ -60,14 +61,22 @@ def validate():
 
     if unvalidated:
         print("Concepts owned but NOT yet externally validated:")
-        for u in unvalidated:
-            print(f"  — {u[0]} (Project {u[1]})")
+        for i, u in enumerate(unvalidated, 1):
+            print(f"  {i}. {u[0]} (Project {u[1]})")
         print()
     else:
         print("All owned concepts are externally validated.\n")
 
-    concept     = input("Concept being validated: ").strip()
-    project_num = int(input("Project number when learned: "))
+    # Pick by number so the name matches the concepts table exactly
+    choice = input(
+        "Concept being validated (list number, or type the name): "
+    ).strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(unvalidated):
+        concept, project_num = unvalidated[int(choice) - 1]
+        print(f"  → {concept} (Project {project_num})")
+    else:
+        concept     = choice
+        project_num = int(input("Project number when learned: "))
     source      = input(
         "Source (e.g. CS:APP 9.9.12, K&R Ex 5.3, "
         "CMU F23 Exam 2 Q4): ").strip()
@@ -79,8 +88,10 @@ def validate():
     correct     = get_multiline(
         "\nPaste the correct answer from the source.")
 
-    result = input("\nResult — did your answer match? (pass/fail): "
-                   ).strip().lower()
+    result = ''
+    while result not in ('pass', 'fail'):
+        result = input("\nResult — did your answer match? (pass/fail): "
+                       ).strip().lower()
 
     c.execute(
         '''INSERT INTO external_validation

@@ -1,8 +1,17 @@
 #!/bin/bash
+if [ -z "$1" ] || [ -z "$2" ]; then
+    echo "Usage: ./new_project.sh <phase> <project number>"
+    exit 1
+fi
 PHASE=$1
-NUMBER=$(printf "%02d" $2)
+NUMBER=$(printf "%02d" "$2")
 FILE=~/projects/malloc-training/phase${PHASE}/project${NUMBER}.c
-cat > $FILE << 'CEOF'
+if [ -e "$FILE" ]; then
+    echo "ERROR: $FILE already exists — not overwriting your code."
+    exit 1
+fi
+mkdir -p "$(dirname "$FILE")"
+cat > "$FILE" << 'CEOF'
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,4 +31,4 @@ int main() {
 }
 CEOF
 echo "Created: $FILE"
-code $FILE
+code "$FILE"

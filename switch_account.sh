@@ -105,8 +105,19 @@ fi
 # ── GATE 4: Verified push ─────────────────────
 echo ""
 echo "GATE 4 — Pushing to GitHub..."
-cd $PROJ
+cd "$PROJ" || exit 1
 git add .
+# Commit staged work first — pushing alone sends nothing new
+if ! git diff --cached --quiet; then
+    if ! git commit -m "Checkpoint before account switch — $(date '+%Y-%m-%d %H:%M')"; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "COMMIT FAILED — DO NOT SWITCH ACCOUNTS"
+        echo "Fix the errors above and re-run switch_account.sh"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        exit 1
+    fi
+fi
 git push
 
 if [ $? -eq 0 ]; then

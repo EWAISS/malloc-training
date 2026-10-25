@@ -64,7 +64,9 @@ def update_adversarial_exam():
     answers = get_multiline("Your answers:")
     gap_found = input("Gap found (yes/no): ")
     gap_location = input("Gap location: ")
-    resolved = input("Resolved (yes/no): ")
+    # Unresolved gaps must be 'pending' so resolve_gap.py finds them
+    resolved_answer = input("Resolved (yes/no): ").strip().lower()
+    resolved = 'yes' if resolved_answer == 'yes' else 'pending'
 
     c.execute('''INSERT INTO adversarial_exams
                  (phase, lab, course, concepts_tested,
@@ -84,5 +86,7 @@ print("2. Adversarial exam")
 choice = input("Which? (1/2): ")
 if choice == "1":
     update_transfer_exam()
-else:
+elif choice == "2":
     update_adversarial_exam()
+else:
+    print(f"Invalid choice: {choice!r}. Nothing recorded.")

@@ -1,6 +1,23 @@
 import sqlite3
 import os
+import re
 import sys
+
+
+# Every key the auto block may contain. Only these start a new
+# field, so multi-line values (handoff, code review) stay whole.
+AUTO_KEYS = [
+    'number', 'name', 'phase', 'lab', 'course', 'concept',
+    'status', 'prediction', 'actual_output', 'what_worked',
+    'what_failed', 'teaching_angle', 'handoff', 'code_review',
+    'key_exchange', 'appears_in_future_labs', 'concept_status',
+    'how_clicked', 'struggled_with', 'resolved_by', 'connects_to',
+    'why_designed', 'gap_closed', 'response_revealed',
+    'lab_connection', 'breaks_without', 'next_must',
+    'position_reasoning', 'sub_projects_generated',
+    'coding_pattern', 'pattern_severity', 'analogy_used',
+    'decision_result',
+]
 
 
 # ─────────────────────────────────────────────
@@ -20,11 +37,20 @@ def get_multiline(prompt):
 
 
 def parse_auto_block(block):
+    keys = '|'.join(sorted(AUTO_KEYS, key=len, reverse=True))
+    if '\n' in block.strip():
+        # Pasted block: keys only count at the start of a line
+        pattern = re.compile(rf'^[ \t]*({keys})[ \t]*:', re.M)
+    else:
+        # Block passed as arguments arrives flattened onto one line
+        pattern = re.compile(rf'(?:^|(?<=\s))({keys})\s*:')
+
+    matches = list(pattern.finditer(block))
     data = {}
-    for line in block.strip().split('\n'):
-        if ':' in line:
-            key, _, value = line.partition(':')
-            data[key.strip()] = value.strip()
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) \
+            else len(block)
+        data[m.group(1)] = block[m.end():end].strip()
     return data
 
 
@@ -113,7 +139,12 @@ def update_auto(block):
     c = conn.cursor()
     d = parse_auto_block(block)
 
-    number = int(d.get('number', 0))
+    if not d.get('number', '').isdigit():
+        print("\nERROR: Auto block has no valid 'number:' line.")
+        print("Nothing was saved.")
+        conn.close()
+        sys.exit(1)
+    number = int(d['number'])
     duplicate_guard(c, number)
 
     name               = d.get('name', '')
@@ -207,6 +238,38 @@ def update_auto(block):
             (concept, specific, failed, worked,
              analogy, wording, exact_sub,
              recurrence, number))
+
+    pattern = d.get('coding_pattern', '')
+    if pattern and pattern.lower() != 'none':
+        c.execute(
+            'SELECT id FROM patterns WHERE pattern = ?',
+            (pattern,))
+        existing = c.fetchone()
+        if existing:
+            c.execute(
+                '''UPDATE patterns
+                   SET frequency = frequency + 1,
+                       last_seen_project = ?
+                   WHERE id = ?''',
+                (number, existing[0]))
+        else:
+            c.execute(
+                '''INSERT INTO patterns
+                   (pattern, first_seen_project,
+                    last_seen_project, severity)
+                   VALUES (?,?,?,?)''',
+                (pattern, number, number,
+                 d.get('pattern_severity', '')))
+
+    if teaching_angle or d.get('analogy_used'):
+        c.execute(
+            '''INSERT INTO decisions
+               (project_number, concept,
+                angle_used, analogy_used, result)
+               VALUES (?,?,?,?,?)''',
+            (number, concept, teaching_angle,
+             d.get('analogy_used', ''),
+             d.get('decision_result', '')))
 
     conn.commit()
 

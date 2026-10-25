@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 try:
     import pytz
@@ -85,9 +85,19 @@ def gap_gate(c, now):
     last_time = c.fetchone()
     if not last_time or not last_time[0]:
         return False
+    last_activity = last_time[0]
+
+    # A passed spaced repetition quiz also counts as activity
+    try:
+        c.execute('SELECT MAX(cleared_at) FROM gap_gate_clears')
+        cleared = c.fetchone()[0]
+        if cleared and cleared > last_activity:
+            last_activity = cleared
+    except sqlite3.OperationalError:
+        pass  # gate never cleared yet
 
     try:
-        last = datetime.fromisoformat(last_time[0])
+        last = datetime.fromisoformat(last_activity)
         if HAS_PYTZ:
             cairo = pytz.timezone('Africa/Cairo')
             now_aware = datetime.now(cairo)
@@ -95,7 +105,9 @@ def gap_gate(c, now):
                 tzinfo=pytz.utc).astimezone(cairo)
             diff = now_aware - last_aware
         else:
-            diff = now - last
+            # completed_at is UTC — compare against UTC now
+            diff = datetime.now(timezone.utc).replace(
+                tzinfo=None) - last
 
         days = diff.days
         if days <= 7:
@@ -119,7 +131,8 @@ def gap_gate(c, now):
 
         print(
             "\nTell Claude: 'Run spaced repetition quiz now.'\n"
-            "After passing all 5, resume normally.\n"
+            "After passing all 5, run:\n"
+            "  python3 context.py --clear-gap-gate\n"
             "Curriculum position is hidden until gate clears."
         )
         print("=" * 60)
@@ -127,6 +140,30 @@ def gap_gate(c, now):
 
     except Exception:
         return False
+
+
+def clear_gap_gate():
+    """Record a passed spaced repetition quiz so the gap gate opens."""
+    passed = input(
+        "Did you pass all 5 spaced repetition questions? (yes/no): "
+    ).strip().lower()
+    if passed != 'yes':
+        print("Gate stays closed. Repeat the quiz with Claude.")
+        return
+
+    db_path = os.path.expanduser(
+        '~/projects/malloc-training/brain.db')
+    conn = sqlite3.connect(db_path)
+    c = conn.cursor()
+    c.execute(
+        '''CREATE TABLE IF NOT EXISTS gap_gate_clears (
+            id INTEGER PRIMARY KEY,
+            cleared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )''')
+    c.execute('INSERT INTO gap_gate_clears DEFAULT VALUES')
+    conn.commit()
+    conn.close()
+    print("Gap gate cleared. Run: python3 context.py")
 
 
 # ─────────────────────────────────────────────
@@ -585,7 +622,6 @@ def generate_context():
         print("  mind_model table not found.")
 
     print("\n" + "=" * 60)
-    conn.close()
 
 
     # ── LAB TRANSITION HISTORY ───────────────────
@@ -607,6 +643,8 @@ def generate_context():
     except Exception:
         pass
 
+    conn.close()
+
     # ── CURRICULUM STATUS ────────────────────────
     curr_path = os.path.join(
         os.path.expanduser('~/projects/malloc-training'),
@@ -614,6 +652,9 @@ def generate_context():
     reason_path = os.path.join(
         os.path.expanduser('~/projects/malloc-training'),
         'CURRICULUM_REASONING.md')
+
+    # Fallback when CURRICULUM.md is missing or fully done
+    next_num = last[0] + 1
 
     if os.path.exists(curr_path):
         # Count pending projects
@@ -655,6 +696,7 @@ def generate_context():
             print(f"  Pending  : {len(not_done)}")
 
             if next_p:
+                next_num = next_p.get('number')
                 print(f"\nNEXT PROJECT FROM CURRICULUM:")
                 print(f"  Project {next_p.get('number')} — "
                       f"{next_p.get('name', '?')}")
@@ -667,19 +709,24 @@ def generate_context():
     if os.path.exists(reason_path):
         print(f"\nNEXT PROJECT REASONING:")
         try:
+            # Find the block for the actual next project,
+            # not just the first block in the file
             lines_r = []
             in_next = False
-            count_r = 0
             with open(reason_path) as f:
                 for line in f:
-                    if line.startswith('NEXT PROJECT:') and count_r < 1:
-                        in_next = True
-                        count_r += 1
+                    if line.startswith('NEXT PROJECT:'):
+                        if in_next:
+                            break
+                        num_r = line.split(':', 1)[1].strip()
+                        in_next = num_r == str(next_num)
+                        if in_next:
+                            lines_r.append(line.rstrip())
+                    elif in_next and line.strip() and \
+                         not line.startswith('#'):
                         lines_r.append(line.rstrip())
-                    elif line.startswith('NEXT PROJECT:') and count_r >= 1:
+                    elif in_next and not line.strip():
                         break
-                    elif in_next and not line.startswith('#'):
-                        lines_r.append(line.rstrip())
             if lines_r:
                 for l in lines_r[:10]:
                     print(f"  {l}")
@@ -704,5 +751,7 @@ def generate_context():
 
 if len(sys.argv) > 1 and sys.argv[1] == '--mini':
     generate_mini_context()
+elif len(sys.argv) > 1 and sys.argv[1] == '--clear-gap-gate':
+    clear_gap_gate()
 else:
     generate_context()

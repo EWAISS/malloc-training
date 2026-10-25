@@ -65,6 +65,15 @@ def migrate():
     except sqlite3.OperationalError:
         print("OK: transfer_exams.adversarial_gap_report exists")
 
+    # Add resolution notes to adversarial_exams if missing
+    try:
+        c.execute(
+            '''ALTER TABLE adversarial_exams
+               ADD COLUMN resolution TEXT''')
+        print("Added: adversarial_exams.resolution")
+    except sqlite3.OperationalError:
+        print("OK: adversarial_exams.resolution exists")
+
 
     c.execute(
         '''CREATE TABLE IF NOT EXISTS lab_transitions (

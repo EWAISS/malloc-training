@@ -77,6 +77,7 @@ def check_database():
                      LEFT JOIN external_validation ev
                      ON ev.concept = c.name
                      AND ev.project_number = c.project_number
+                     AND ev.result = 'pass'
                      WHERE c.status = 'owned'
                      AND ev.id IS NULL''')
         unvalidated = c.fetchall()

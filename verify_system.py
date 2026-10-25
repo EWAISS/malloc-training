@@ -114,8 +114,12 @@ if os.path.exists(session_path):
     check("ACTIVE LAB declared",
           'ACTIVE LAB:' in content,
           "Add ACTIVE LAB: L0 C Programming Lab to SESSION.md")
+    rule_lines = [l.split(':', 1)[1].strip()
+                  for l in content.splitlines()
+                  if l.startswith('PERSONAL RULE:')]
     check("PERSONAL RULE filled in",
-          '[write your one sentence here]' not in content,
+          bool(rule_lines) and rule_lines[0]
+          and not rule_lines[0].startswith('['),
           "Write your personal rule in SESSION.md")
 else:
     check("SESSION.md exists", False,
