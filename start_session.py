@@ -22,6 +22,8 @@ import sys
 import subprocess
 from datetime import datetime
 
+from prompts import ask_float, ask_int, ask_yes_no
+
 try:
     import pytz
     HAS_PYTZ = True
@@ -64,18 +66,6 @@ def abort(reason):
     sys.exit(1)
 
 
-def ask_number(prompt, cast):
-    """Re-ask until valid — a typo must not count as a good answer."""
-    while True:
-        try:
-            value = cast(input(prompt))
-            if value >= 0:
-                return value
-        except ValueError:
-            pass
-        print("  Please enter a number.")
-
-
 def require_table(c, name):
     """Tables come from schema.sql — stop if this database predates it."""
     c.execute("SELECT 1 FROM sqlite_master "
@@ -99,12 +89,12 @@ def step_mood():
 
     print("Answer honestly. These are facts, not feelings.\n")
 
-    sleep = ask_number("Hours of sleep last night: ", float)
+    sleep = ask_float("Hours of sleep last night: ", 0, 24)
 
-    ate = input("Did you eat today? (yes/no): ").strip().lower()
+    ate = 'yes' if ask_yes_no("Did you eat today? (yes/no): ") else 'no'
 
-    days_no_break = ask_number(
-        "Days since your last full rest day: ", int)
+    days_no_break = ask_int(
+        "Days since your last full rest day: ", 0)
 
     score = 0
     if sleep >= 7:
@@ -124,8 +114,7 @@ def step_mood():
     elif score >= 2:
         state = "DEGRADED"
         print("\nSTATE: DEGRADED — review only, no new concepts.")
-        confirm = input("Proceed anyway? (yes/no): ").strip().lower()
-        if confirm != 'yes':
+        if not ask_yes_no("Proceed anyway? (yes/no): "):
             _log_mood(sleep, ate, days_no_break, state)
             print("Good call. Come back tomorrow.")
             sys.exit(0)

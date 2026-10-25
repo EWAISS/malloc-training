@@ -9,19 +9,9 @@ import sqlite3
 import os
 import sys
 
+from prompts import ask_int, ask_multiline, ask_text, ask_yes_no
+
 DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
-
-
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on a new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
 
 
 def resolve_gap():
@@ -53,32 +43,28 @@ def resolve_gap():
         print(f"  Found: {p[4]}")
         print()
 
-    gap_id = int(input("Enter gap ID to resolve: "))
-
-    # Verify it exists and is pending
-    c.execute(
-        '''SELECT id, phase, lab, gap_location
-           FROM adversarial_exams
-           WHERE id = ? AND resolved = 'pending' ''',
-        (gap_id,))
-    gap = c.fetchone()
-
-    if not gap:
-        print(f"\nERROR: Gap ID {gap_id} not found or already resolved.")
-        conn.close()
-        return
+    # Re-ask until the ID is one of the pending gaps listed above
+    while True:
+        gap_id = ask_int("Enter gap ID to resolve: ", 1)
+        c.execute(
+            '''SELECT id, phase, lab, gap_location
+               FROM adversarial_exams
+               WHERE id = ? AND resolved = 'pending' ''',
+            (gap_id,))
+        gap = c.fetchone()
+        if gap:
+            break
+        print(f"  Gap ID {gap_id} is not pending. Pick an ID listed above.")
 
     print(f"\nResolving gap:")
     print(f"  Phase {gap[1]} | {gap[2]}")
     print(f"  Gap: {gap[3]}")
 
-    how_resolved = get_multiline(
+    how_resolved = ask_multiline(
         "\nHow was this gap repaired? "
         "(which project, which analogy, what clicked):")
 
-    confirm = input(
-        "\nMark this gap as resolved? (yes/no): ").lower()
-    if confirm != 'yes':
+    if not ask_yes_no("\nMark this gap as resolved? (yes/no): "):
         print("Cancelled.")
         conn.close()
         return
@@ -90,15 +76,13 @@ def resolve_gap():
         (how_resolved, gap_id))
 
     # Also log to weakness_patterns if not already there
-    log_pattern = input(
-        "\nLog repair as weakness pattern? (yes/no): ").lower()
-    if log_pattern == 'yes':
-        concept    = input("Concept: ").strip()
-        misconception = input("Specific misconception: ").strip()
-        analogy    = input("Analogy that clicked: ").strip()
-        wording    = input("Exact wording that clicked: ").strip()
-        watch      = input("Watch for recurrence: ").strip()
-        proj_num   = int(input("Project number where it resolved: "))
+    if ask_yes_no("\nLog repair as weakness pattern? (yes/no): "):
+        concept    = ask_text("Concept: ")
+        misconception = ask_text("Specific misconception: ")
+        analogy    = ask_text("Analogy that clicked: ")
+        wording    = ask_text("Exact wording that clicked: ")
+        watch      = ask_text("Watch for recurrence: ")
+        proj_num   = ask_int("Project number where it resolved: ", 1)
 
         c.execute(
             '''INSERT INTO weakness_patterns

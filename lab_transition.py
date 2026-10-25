@@ -13,20 +13,10 @@ import os
 import sys
 from datetime import datetime
 
+from prompts import ask_multiline, ask_text, ask_yes_no
+
 DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
 PROJ    = os.path.expanduser('~/projects/malloc-training')
-
-
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on a new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
 
 
 def get_db():
@@ -69,7 +59,7 @@ def run_transition():
     print(f"Completing lab : {current_lab}")
     print(f"Course         : {current_course}")
 
-    next_lab = input("\nNext lab name: ").strip()
+    next_lab = ask_text("\nNext lab name: ", required=True)
 
     # Check if transition already exists
     c.execute(
@@ -77,10 +67,9 @@ def run_transition():
         (current_lab,))
     existing = c.fetchone()
     if existing:
-        redo = input(
-            f"Transition for {current_lab} already exists. "
-            "Replace? (yes/no): ").lower()
-        if redo != 'yes':
+        if not ask_yes_no(
+                f"Transition for {current_lab} already exists. "
+                "Replace? (yes/no): "):
             conn.close()
             return
         c.execute(
@@ -151,7 +140,7 @@ Connect explicitly to what {next_lab} will require.
 """)
     print("=" * 60)
 
-    summary = get_multiline(
+    summary = ask_multiline(
         "\nPaste Claude's transition summary:")
 
     if not summary.strip():

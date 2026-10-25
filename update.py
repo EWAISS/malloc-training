@@ -3,6 +3,8 @@ import os
 import re
 import sys
 
+from prompts import (ask_int, ask_multiline, ask_text, ask_yes_no)
+
 
 # Every key the auto block may contain. Only these start a new
 # field, so multi-line values (handoff, code review) stay whole.
@@ -23,18 +25,6 @@ AUTO_KEYS = [
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on a new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
-
 
 def parse_auto_block(block):
     keys = '|'.join(sorted(AUTO_KEYS, key=len, reverse=True))
@@ -92,7 +82,7 @@ def mind_model_trigger(conn, c, total):
     )
     print("─" * 55)
     print("\nPaste Claude's response below.")
-    mind_update = get_multiline("")
+    mind_update = ask_multiline("")
 
     if not mind_update.strip():
         print("\nWARNING: Mind model update skipped.")
@@ -148,7 +138,12 @@ def update_auto(block):
     duplicate_guard(c, number)
 
     name               = d.get('name', '')
-    phase              = int(d.get('phase', 1))
+    phase_raw          = d.get('phase', '1')
+    if phase_raw.isdigit() and 1 <= int(phase_raw) <= 5:
+        phase = int(phase_raw)
+    else:
+        print(f"\nAuto block has phase {phase_raw!r}; expected 1-5.")
+        phase = ask_int("Phase (1-5): ", 1, 5)
     lab                = d.get('lab', '')
     course             = d.get('course', '')
     concept            = d.get('concept', '')
@@ -175,7 +170,7 @@ def update_auto(block):
     next_must          = d.get('next_must', '')
     position           = d.get('position_reasoning', '')
 
-    final_code = get_multiline("\nPaste final code.")
+    final_code = ask_multiline("\nPaste final code.")
 
     c.execute(
         '''INSERT INTO projects
@@ -215,14 +210,14 @@ def update_auto(block):
          breaks, next_must, position))
 
     sub = d.get('sub_projects_generated', 'no')
-    if sub.lower() == 'yes':
-        specific  = input("Specific misconception: ")
-        failed    = input("Sub-projects that failed: ")
-        worked    = input("Sub-project that worked: ")
-        analogy   = input("Exact analogy that clicked: ")
-        wording   = input("Exact wording that clicked: ")
-        recurrence = input("Watch for recurrence: ")
-        exact_sub = get_multiline("Paste exact sub-project text.")
+    if sub.strip().lower() == 'yes':
+        specific  = ask_text("Specific misconception: ")
+        failed    = ask_text("Sub-projects that failed: ")
+        worked    = ask_text("Sub-project that worked: ")
+        analogy   = ask_text("Exact analogy that clicked: ")
+        wording   = ask_text("Exact wording that clicked: ")
+        recurrence = ask_text("Watch for recurrence: ")
+        exact_sub = ask_multiline("Paste exact sub-project text.")
 
         c.execute(
             '''INSERT INTO weakness_patterns
@@ -298,29 +293,29 @@ def update_interactive():
     print("POST-PROJECT UPDATE — INTERACTIVE")
     print("=" * 45)
 
-    number = int(input("Project number: "))
+    number = ask_int("Project number: ", 1)
     duplicate_guard(c, number)
 
-    name           = input("Project name: ")
-    phase          = int(input("Phase (1-5): "))
-    lab            = input("Lab name: ")
-    course         = input("Course name: ")
-    concept        = input("Core concept: ")
-    status         = input("Status (owned/cracked/struggling): ")
-    prediction     = input("Your prediction was: ")
-    actual_output  = input("Actual output was: ")
-    what_worked    = input("What worked: ")
-    what_failed    = input("What failed (or 'nothing'): ")
-    teaching_angle = input("Teaching angle used: ")
+    name           = ask_text("Project name: ")
+    phase          = ask_int("Phase (1-5): ", 1, 5)
+    lab            = ask_text("Lab name: ")
+    course         = ask_text("Course name: ")
+    concept        = ask_text("Core concept: ")
+    status         = ask_text("Status (owned/cracked/struggling): ")
+    prediction     = ask_text("Your prediction was: ")
+    actual_output  = ask_text("Actual output was: ")
+    what_worked    = ask_text("What worked: ")
+    what_failed    = ask_text("What failed (or 'nothing'): ")
+    teaching_angle = ask_text("Teaching angle used: ")
 
     # Handoff collected here — mid-session, not at token limit
     print("\nHandoff (generate this in Claude NOW while sharp):")
-    handoff        = input("> ")
+    handoff        = ask_text("> ")
 
-    code_review    = input("Code patterns observed: ")
-    key_exchange   = input("Critical exchange (or 'none'): ")
-    appears_in     = input("Appears in future labs: ")
-    final_code     = get_multiline("\nPaste final code.")
+    code_review    = ask_text("Code patterns observed: ")
+    key_exchange   = ask_text("Critical exchange (or 'none'): ")
+    appears_in     = ask_text("Appears in future labs: ")
+    final_code     = ask_multiline("\nPaste final code.")
 
     c.execute(
         '''INSERT INTO projects
@@ -338,11 +333,11 @@ def update_interactive():
          what_failed, handoff, code_review,
          key_exchange, appears_in))
 
-    concept_status = input("\nConcept status (owned/cracked): ")
-    how_clicked    = input("How it clicked: ")
-    struggled      = input("Struggled with: ")
-    resolved       = input("Resolved by: ")
-    connects       = input("Connects to: ")
+    concept_status = ask_text("\nConcept status (owned/cracked): ")
+    how_clicked    = ask_text("How it clicked: ")
+    struggled      = ask_text("Struggled with: ")
+    resolved       = ask_text("Resolved by: ")
+    connects       = ask_text("Connects to: ")
 
     c.execute(
         '''INSERT INTO concepts
@@ -353,13 +348,13 @@ def update_interactive():
         (concept, concept_status, how_clicked,
          struggled, resolved, connects, number))
 
-    why      = input("\nWhy designed this way: ")
-    gap      = input("Gap it closes: ")
-    revealed = input("Response revealed: ")
-    lab_conn = input("Lab connection: ")
-    breaks   = input("Breaks without this: ")
-    next_must = input("Next project must: ")
-    position  = input("Position reasoning: ")
+    why      = ask_text("\nWhy designed this way: ")
+    gap      = ask_text("Gap it closes: ")
+    revealed = ask_text("Response revealed: ")
+    lab_conn = ask_text("Lab connection: ")
+    breaks   = ask_text("Breaks without this: ")
+    next_must = ask_text("Next project must: ")
+    position  = ask_text("Position reasoning: ")
 
     c.execute(
         '''INSERT INTO project_narrative
@@ -373,15 +368,14 @@ def update_interactive():
         (number, why, gap, revealed, lab_conn,
          breaks, next_must, position))
 
-    sub = input("\nSub-projects generated? (yes/no): ")
-    if sub.lower() == 'yes':
-        specific   = input("Specific misconception: ")
-        failed     = input("Sub-projects that failed: ")
-        worked     = input("Sub-project that worked: ")
-        analogy    = input("Exact analogy: ")
-        wording    = input("Exact wording: ")
-        recurrence = input("Watch for: ")
-        exact_sub  = get_multiline("Paste exact sub-project text.")
+    if ask_yes_no("\nSub-projects generated? (yes/no): "):
+        specific   = ask_text("Specific misconception: ")
+        failed     = ask_text("Sub-projects that failed: ")
+        worked     = ask_text("Sub-project that worked: ")
+        analogy    = ask_text("Exact analogy: ")
+        wording    = ask_text("Exact wording: ")
+        recurrence = ask_text("Watch for: ")
+        exact_sub  = ask_multiline("Paste exact sub-project text.")
 
         c.execute(
             '''INSERT INTO weakness_patterns
@@ -398,9 +392,9 @@ def update_interactive():
              analogy, wording, exact_sub,
              recurrence, number))
 
-    pattern = input("\nCoding pattern (or enter to skip): ")
-    if pattern.strip():
-        severity = input("Severity (low/medium/high): ")
+    pattern = ask_text("\nCoding pattern (or enter to skip): ")
+    if pattern:
+        severity = ask_text("Severity (low/medium/high): ")
         c.execute(
             'SELECT id, frequency FROM patterns WHERE pattern = ?',
             (pattern,))
@@ -420,9 +414,9 @@ def update_interactive():
                    VALUES (?,?,?,?)''',
                 (pattern, number, number, severity))
 
-    angle   = input("\nTeaching angle used: ")
-    analogy2 = input("Analogy used: ")
-    result  = input("Result (landed/struggled/failed): ")
+    angle   = ask_text("\nTeaching angle used: ")
+    analogy2 = ask_text("Analogy used: ")
+    result  = ask_text("Result (landed/struggled/failed): ")
 
     c.execute(
         '''INSERT INTO decisions
@@ -453,14 +447,7 @@ if len(sys.argv) > 1 and sys.argv[1] == '--auto':
     if len(sys.argv) > 2:
         block = ' '.join(sys.argv[2:])
     else:
-        print("Paste auto update block. Type END when done:")
-        lines = []
-        while True:
-            line = input()
-            if line == "END":
-                break
-            lines.append(line)
-        block = '\n'.join(lines)
+        block = ask_multiline("Paste auto update block.")
     update_auto(block)
 else:
     update_interactive()

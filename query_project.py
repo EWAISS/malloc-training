@@ -2,6 +2,8 @@ import sqlite3
 import os
 import sys
 
+from prompts import ask_int
+
 def query_project(number):
     db_path = os.path.expanduser(
         '~/projects/malloc-training/brain.db')
@@ -73,7 +75,10 @@ def query_project(number):
     conn.close()
 
 if len(sys.argv) > 1:
+    if not sys.argv[1].isdigit():
+        print("Usage: python3 query_project.py [project number]")
+        sys.exit(1)
     query_project(int(sys.argv[1]))
 else:
-    number = int(input("Project number: "))
+    number = ask_int("Project number: ", 1)
     query_project(number)

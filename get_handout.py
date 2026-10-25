@@ -2,6 +2,8 @@ import sqlite3
 import os
 import sys
 
+from prompts import ask_text
+
 def get_handout(lab):
     db_path = os.path.expanduser(
         '~/projects/malloc-training/brain.db')
@@ -41,5 +43,5 @@ def get_handout(lab):
 if len(sys.argv) > 1:
     get_handout(' '.join(sys.argv[1:]))
 else:
-    lab = input("Lab name: ")
+    lab = ask_text("Lab name: ", required=True)
     get_handout(lab)

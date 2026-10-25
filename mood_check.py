@@ -3,17 +3,7 @@ import os
 import sys
 from datetime import datetime
 
-
-def ask_number(prompt, cast):
-    """Re-ask until valid — a typo must not count as a good answer."""
-    while True:
-        try:
-            value = cast(input(prompt))
-            if value >= 0:
-                return value
-        except ValueError:
-            pass
-        print("  Please enter a number.")
+from prompts import ask_float, ask_int, ask_text, ask_yes_no
 
 
 def require_table(c, name):
@@ -37,12 +27,12 @@ def mood_check():
     print("Answer honestly. These are facts, not feelings.")
     print("=" * 45)
 
-    sleep = ask_number("\nHours of sleep last night: ", float)
+    sleep = ask_float("\nHours of sleep last night: ", 0, 24)
 
-    ate = input("Did you eat today? (yes/no): ").strip().lower()
+    ate = 'yes' if ask_yes_no("Did you eat today? (yes/no): ") else 'no'
 
-    days_no_break = ask_number(
-        "Days since your last full rest day: ", int)
+    days_no_break = ask_int(
+        "Days since your last full rest day: ", 0)
 
     # Score
     score = 0
@@ -74,8 +64,7 @@ def mood_check():
             "Do not introduce new concepts today.\n"
             "Update SESSION.md: EMOTIONAL STATE: degraded"
         )
-        confirm = input("\nProceed anyway? (yes/no): ").strip().lower()
-        if confirm != 'yes':
+        if not ask_yes_no("\nProceed anyway? (yes/no): "):
             print("\nGood call. The curriculum will be here tomorrow.")
             _log_state(sleep, ate, days_no_break, state)
             sys.exit(0)
@@ -90,7 +79,7 @@ def mood_check():
             "Nothing learned on a broken brain is retained."
         )
         _log_state(sleep, ate, days_no_break, state)
-        input("\nPress ENTER to exit.")
+        ask_text("\nPress ENTER to exit.")
         sys.exit(0)
 
     _log_state(sleep, ate, days_no_break, state)

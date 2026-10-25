@@ -1,16 +1,7 @@
 import sqlite3
 import os
 
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
+from prompts import ask_int, ask_multiline, ask_text, ask_yes_no
 
 def update_transfer_exam():
     db_path = os.path.expanduser(
@@ -22,15 +13,15 @@ def update_transfer_exam():
     print("TRANSFER EXAM UPDATE")
     print("=" * 40)
 
-    phase = int(input("Phase (1-5): "))
-    lab = input("Lab name: ")
-    course = input("Course name: ")
-    scenario = get_multiline("Exam scenario:")
-    implementation = get_multiline("Your implementation:")
-    evaluation = get_multiline("Claude evaluation:")
-    gaps = input("Gaps found (or 'none'): ")
-    adversarial = get_multiline("Adversarial gap report:")
-    status = input("Status (passed/failed): ")
+    phase = ask_int("Phase (1-5): ", 1, 5)
+    lab = ask_text("Lab name: ")
+    course = ask_text("Course name: ")
+    scenario = ask_multiline("Exam scenario:")
+    implementation = ask_multiline("Your implementation:")
+    evaluation = ask_multiline("Claude evaluation:")
+    gaps = ask_text("Gaps found (or 'none'): ")
+    adversarial = ask_multiline("Adversarial gap report:")
+    status = ask_text("Status (passed/failed): ")
 
     c.execute('''INSERT INTO transfer_exams
                  (phase, lab, course, exam_scenario,
@@ -56,17 +47,16 @@ def update_adversarial_exam():
     print("ADVERSARIAL EXAM UPDATE")
     print("=" * 40)
 
-    phase = int(input("Phase (1-5): "))
-    lab = input("Lab name: ")
-    course = input("Course name: ")
-    concepts = input("Concepts tested: ")
-    questions = get_multiline("Questions asked:")
-    answers = get_multiline("Your answers:")
-    gap_found = input("Gap found (yes/no): ")
-    gap_location = input("Gap location: ")
+    phase = ask_int("Phase (1-5): ", 1, 5)
+    lab = ask_text("Lab name: ")
+    course = ask_text("Course name: ")
+    concepts = ask_text("Concepts tested: ")
+    questions = ask_multiline("Questions asked:")
+    answers = ask_multiline("Your answers:")
+    gap_found = 'yes' if ask_yes_no("Gap found (yes/no): ") else 'no'
+    gap_location = ask_text("Gap location: ")
     # Unresolved gaps must be 'pending' so resolve_gap.py finds them
-    resolved_answer = input("Resolved (yes/no): ").strip().lower()
-    resolved = 'yes' if resolved_answer == 'yes' else 'pending'
+    resolved = 'yes' if ask_yes_no("Resolved (yes/no): ") else 'pending'
 
     c.execute('''INSERT INTO adversarial_exams
                  (phase, lab, course, concepts_tested,
@@ -83,10 +73,7 @@ def update_adversarial_exam():
 
 print("1. Transfer exam")
 print("2. Adversarial exam")
-choice = input("Which? (1/2): ")
-if choice == "1":
+if ask_int("Which? (1/2): ", 1, 2) == 1:
     update_transfer_exam()
-elif choice == "2":
-    update_adversarial_exam()
 else:
-    print(f"Invalid choice: {choice!r}. Nothing recorded.")
+    update_adversarial_exam()

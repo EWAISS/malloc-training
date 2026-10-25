@@ -1,16 +1,7 @@
 import sqlite3
 import os
 
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
+from prompts import ask_multiline, ask_text
 
 def store_handout():
     db_path = os.path.expanduser(
@@ -22,17 +13,17 @@ def store_handout():
     print("STORE LAB HANDOUT EXTRACTION")
     print("=" * 40)
 
-    course = input("Course name: ")
-    lab = input("Lab name: ")
-    functions = get_multiline("Functions to implement:")
-    grading = get_multiline("Grading criteria:")
-    autograder = get_multiline("Autograder behavior:")
-    constraints = get_multiline("Critical constraints:")
-    edges = get_multiline("Edge cases:")
-    tools = get_multiline("Required tools:")
-    hardest = get_multiline("Hardest concept:")
-    chapters = get_multiline("Book chapters:")
-    raw = get_multiline("Full raw extraction:")
+    course = ask_text("Course name: ")
+    lab = ask_text("Lab name: ")
+    functions = ask_multiline("Functions to implement:")
+    grading = ask_multiline("Grading criteria:")
+    autograder = ask_multiline("Autograder behavior:")
+    constraints = ask_multiline("Critical constraints:")
+    edges = ask_multiline("Edge cases:")
+    tools = ask_multiline("Required tools:")
+    hardest = ask_multiline("Hardest concept:")
+    chapters = ask_multiline("Book chapters:")
+    raw = ask_multiline("Full raw extraction:")
 
     c.execute('''INSERT INTO lab_handouts
                  (course, lab, functions_to_implement,

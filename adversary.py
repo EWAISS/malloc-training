@@ -2,6 +2,8 @@ import sqlite3
 import os
 import sys
 
+from prompts import ask_multiline, ask_text, ask_yes_no
+
 
 def require_table(c, name):
     """Tables come from schema.sql — stop if this database predates it."""
@@ -43,8 +45,7 @@ def run_adversarial():
 
     if existing and existing.strip() not in ('', 'none'):
         print(f"Phase {phase} {lab} already has an adversarial report.")
-        redo = input("Replace it? (yes/no): ").lower()
-        if redo != 'yes':
+        if not ask_yes_no("Replace it? (yes/no): "):
             conn.close()
             return
 
@@ -89,17 +90,10 @@ def run_adversarial():
     )
     print("─" * 60)
 
-    input("\nPress ENTER when you have finished the adversarial session...")
+    ask_text("\nPress ENTER when you have finished the adversarial session...")
 
-    print("\nPaste the adversary's final gap report (one sentence).")
-    print("Type END on a new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    gap_report = "\n".join(lines).strip()
+    gap_report = ask_multiline(
+        "\nPaste the adversary's final gap report (one sentence).").strip()
 
     if not gap_report:
         print("\nERROR: No gap report provided. Exam not recorded.")

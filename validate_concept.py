@@ -2,17 +2,7 @@ import sqlite3
 import os
 import sys
 
-
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on a new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
+from prompts import ask_choice, ask_int, ask_multiline, ask_text
 
 
 def require_table(c, name):
@@ -65,30 +55,27 @@ def validate():
         print("All owned concepts are externally validated.\n")
 
     # Pick by number so the name matches the concepts table exactly
-    choice = input(
-        "Concept being validated (list number, or type the name): "
-    ).strip()
+    choice = ask_text(
+        "Concept being validated (list number, or type the name): ")
     if choice.isdigit() and 1 <= int(choice) <= len(unvalidated):
         concept, project_num = unvalidated[int(choice) - 1]
         print(f"  → {concept} (Project {project_num})")
     else:
         concept     = choice
-        project_num = int(input("Project number when learned: "))
-    source      = input(
+        project_num = ask_int("Project number when learned: ", 1)
+    source      = ask_text(
         "Source (e.g. CS:APP 9.9.12, K&R Ex 5.3, "
-        "CMU F23 Exam 2 Q4): ").strip()
+        "CMU F23 Exam 2 Q4): ")
 
-    question    = get_multiline("\nPaste the question.")
-    your_answer = get_multiline(
+    question    = ask_multiline("\nPaste the question.")
+    your_answer = ask_multiline(
         "\nAttempt your answer WITHOUT any help.\n"
         "No Claude. No book. From your head only.")
-    correct     = get_multiline(
+    correct     = ask_multiline(
         "\nPaste the correct answer from the source.")
 
-    result = ''
-    while result not in ('pass', 'fail'):
-        result = input("\nResult — did your answer match? (pass/fail): "
-                       ).strip().lower()
+    result = ask_choice("\nResult — did your answer match? (pass/fail): ",
+                        ('pass', 'fail'))
 
     c.execute(
         '''INSERT INTO external_validation

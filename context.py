@@ -3,6 +3,8 @@ import os
 import sys
 from datetime import datetime, timezone
 
+from prompts import ask_yes_no
+
 try:
     import pytz
     HAS_PYTZ = True
@@ -144,10 +146,8 @@ def gap_gate(c, now):
 
 def clear_gap_gate():
     """Record a passed spaced repetition quiz so the gap gate opens."""
-    passed = input(
-        "Did you pass all 5 spaced repetition questions? (yes/no): "
-    ).strip().lower()
-    if passed != 'yes':
+    if not ask_yes_no(
+            "Did you pass all 5 spaced repetition questions? (yes/no): "):
         print("Gate stays closed. Repeat the quiz with Claude.")
         return
 

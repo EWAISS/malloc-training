@@ -11,20 +11,11 @@ import sqlite3
 import os
 import sys
 
+from prompts import (ask_choice, ask_int, ask_multiline, ask_text,
+                     ask_yes_no)
+
 DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
 PROJ    = os.path.expanduser('~/projects/malloc-training')
-
-
-def get_multiline(prompt):
-    print(prompt)
-    print("Type END on a new line when done:")
-    lines = []
-    while True:
-        line = input()
-        if line == "END":
-            break
-        lines.append(line)
-    return "\n".join(lines)
 
 
 def get_db():
@@ -41,7 +32,7 @@ def update_full_detail():
     print("Run this after update.py.")
     print("Captures quiz records and session detail.\n")
 
-    number = int(input("Project number: "))
+    number = ask_int("Project number: ", 1)
 
     # Verify project exists
     c.execute('SELECT name, concept, lab, course FROM projects '
@@ -62,10 +53,8 @@ def update_full_detail():
               'WHERE project_number = ?', (number,))
     existing = c.fetchone()
     if existing:
-        redo = input(
-            "Full detail already exists. Replace? (yes/no): "
-        ).lower()
-        if redo != 'yes':
+        if not ask_yes_no(
+                "Full detail already exists. Replace? (yes/no): "):
             conn.close()
             return
         c.execute('DELETE FROM project_full_detail '
@@ -74,25 +63,25 @@ def update_full_detail():
     # ── FULL DETAIL ──────────────────────────────
     print("\n--- PROJECT FULL DETAIL ---")
 
-    full_spec = get_multiline(
+    full_spec = ask_multiline(
         "\nFull project specification as given by Claude:")
 
-    micro = get_multiline(
+    micro = ask_multiline(
         "\nMicro-projects generated (or 'none'):")
 
-    all_questions = get_multiline(
+    all_questions = ask_multiline(
         "\nAll quiz questions asked:")
 
-    all_answers = get_multiline(
+    all_answers = ask_multiline(
         "\nAll your quiz answers:")
 
-    failures = get_multiline(
+    failures = ask_multiline(
         "\nExact failure moments — what broke, what you said:")
 
-    successes = get_multiline(
+    successes = ask_multiline(
         "\nExact success moments — what clicked and when:")
 
-    memory_evolution = get_multiline(
+    memory_evolution = ask_multiline(
         "\nHow your memory model evolved this project:")
 
     c.execute(
@@ -117,18 +106,18 @@ def update_full_detail():
     question_num = 1
     while True:
         print(f"Question {question_num}:")
-        q_text = input("  Question text (or Enter to stop): ").strip()
+        q_text = ask_text("  Question text (or Enter to stop): ")
         if not q_text:
             break
 
-        your_answer = input("  Your answer: ").strip()
-        evaluation  = input(
-            "  Evaluation (correct/partial/wrong): ").strip()
-        result      = input("  Result (pass/fail): ").strip()
-        is_novel    = input(
-            "  Novel question? Never asked before? (yes/no): "
-        ).strip().lower()
-        is_novel_int = 1 if is_novel == 'yes' else 0
+        your_answer = ask_text("  Your answer: ")
+        evaluation  = ask_choice(
+            "  Evaluation (correct/partial/wrong): ",
+            ('correct', 'partial', 'wrong'))
+        result      = ask_choice("  Result (pass/fail): ",
+                                 ('pass', 'fail'))
+        is_novel_int = 1 if ask_yes_no(
+            "  Novel question? Never asked before? (yes/no): ") else 0
 
         c.execute(
             '''INSERT INTO quiz_records
