@@ -1,57 +1,32 @@
 """
-init_db.py — safe migration script.
-Run this once to add all new tables and columns
-introduced by the 8-fix upgrade.
-Safe to run on an existing database: uses IF NOT EXISTS
-and checks before ALTER TABLE.
+init_db.py — creates or migrates brain.db.
+On a fresh database: creates every table from schema.sql.
+On an existing database: adds any missing tables and columns.
+Safe to run repeatedly: tables use IF NOT EXISTS and
+columns are checked before ALTER TABLE.
 """
 import sqlite3
 import os
+import re
+
+PROJ        = os.path.expanduser('~/projects/malloc-training')
+DB_PATH     = os.path.join(PROJ, 'brain.db')
+SCHEMA_PATH = os.path.join(PROJ, 'schema.sql')
 
 
 def migrate():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # ── NEW TABLES ──────────────────────────────
-
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS external_validation (
-            id INTEGER PRIMARY KEY,
-            concept TEXT,
-            project_number INTEGER,
-            source TEXT,
-            question TEXT,
-            your_answer TEXT,
-            correct_answer TEXT,
-            result TEXT,
-            validated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS mood_logs (
-            id INTEGER PRIMARY KEY,
-            sleep_hours REAL,
-            ate TEXT,
-            days_no_break INTEGER,
-            state TEXT,
-            logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS adversarial_exams (
-            id INTEGER PRIMARY KEY,
-            phase INTEGER,
-            lab TEXT,
-            course TEXT,
-            concepts_tested TEXT,
-            gap_found TEXT,
-            gap_location TEXT,
-            resolved TEXT DEFAULT 'pending',
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
+    # ── TABLES (from schema.sql) ─────────────────
+    # sqlite3 .schema emits plain CREATE TABLE; make each one
+    # a no-op when the table already exists
+    with open(SCHEMA_PATH) as f:
+        schema = f.read()
+    schema = re.sub(r'CREATE TABLE (?!IF NOT EXISTS)',
+                    'CREATE TABLE IF NOT EXISTS ', schema)
+    c.executescript(schema)
+    print("OK: all tables from schema.sql exist")
 
     # ── COLUMN MIGRATIONS ───────────────────────
     # Add adversarial_gap_report to transfer_exams if missing
@@ -74,26 +49,11 @@ def migrate():
     except sqlite3.OperationalError:
         print("OK: adversarial_exams.resolution exists")
 
-
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS lab_transitions (
-            id INTEGER PRIMARY KEY,
-            lab TEXT,
-            course TEXT,
-            concepts_owned TEXT,
-            carried_forward TEXT,
-            watch_for TEXT,
-            key_analogy TEXT,
-            full_summary TEXT,
-            next_lab TEXT,
-            transitioned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-
     conn.commit()
     conn.close()
 
     print("\nMigration complete.")
-    print("All new tables and columns are in place.")
+    print("All tables and columns are in place.")
     print("Run db_check.py to verify.")
 
 
