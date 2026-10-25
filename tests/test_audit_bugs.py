@@ -3,6 +3,7 @@ One test (or group) per bug in the phase-1 audit table.
 Test names carry the bug number from that table.
 """
 import signal
+import sqlite3
 import subprocess
 import sys
 import time
@@ -278,6 +279,29 @@ def test_bug07_bogus_validation_does_not_clear_debt(env):
     assert 'Validation rate OK' not in r.out, r.out
     assert ('VALIDATION DEBT DETECTED' in r.out
             or 'ORPHAN: external_validation' in r.out), r.out
+
+
+@step(3)
+def test_bug07_db_check_blocks_bogus_validation(env):
+    env.add_projects([1, 2, 3])
+    env.add_validation(1)
+    assert env.run('db_check.py').returncode == 0
+
+    # A database written before foreign keys existed can hold a pass
+    # for a concept that was never recorded (foreign keys OFF here).
+    env.ex("INSERT INTO external_validation (concept, project_number, "
+           "result) VALUES ('12', 12, 'pass')")
+    r = env.run('db_check.py')
+    assert r.returncode == 1, r.out
+    assert '[ERROR] ORPHAN: external_validation' in r.out, r.out
+
+    # With foreign keys on — as every script connects — it can't get in
+    conn = env.db()
+    conn.execute('PRAGMA foreign_keys = ON')
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO external_validation (concept, "
+                     "project_number, result) VALUES ('13', 13, 'pass')")
+    conn.close()
 
 
 # ─────────────────────────────────────────────
