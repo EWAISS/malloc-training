@@ -108,8 +108,11 @@ def main():
                 print(f"  [DONE] Project {num} — {row[1]} ({row[2]})")
         return
 
+    # Count against the curriculum: a project in the database but not
+    # in CURRICULUM.md is reported below, not counted as progress
+    planned_nums    = {p.get('number') for p in planned}
     total_planned   = len(planned)
-    total_completed = len(completed)
+    total_completed = len(planned_nums & set(completed))
     total_pending   = total_planned - total_completed
 
     print(f"\nTotal planned  : {total_planned}")

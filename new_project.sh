@@ -3,8 +3,13 @@ if [ -z "$1" ] || [ -z "$2" ]; then
     echo "Usage: ./new_project.sh <phase> <project number>"
     exit 1
 fi
+if ! [[ "$2" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: project number must be a number, got '$2'"
+    exit 1
+fi
 PHASE=$1
-NUMBER=$(printf "%02d" "$2")
+# 10# forces base 10: printf would read 08 and 09 as bad octal
+NUMBER=$(printf "%02d" "$((10#$2))")
 FILE=~/projects/malloc-training/phase${PHASE}/project${NUMBER}.c
 if [ -e "$FILE" ]; then
     echo "ERROR: $FILE already exists — not overwriting your code."

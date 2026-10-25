@@ -1,7 +1,7 @@
 import sqlite3
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
 
 import gates
 from db import connect
@@ -253,15 +253,8 @@ def generate_context():
     last_time = c.fetchone()
     if last_time and last_time[0]:
         try:
-            last = datetime.fromisoformat(last_time[0])
-            if HAS_PYTZ:
-                cairo = pytz.timezone('Africa/Cairo')
-                now_aware = datetime.now(cairo)
-                last_aware = last.replace(
-                    tzinfo=pytz.utc).astimezone(cairo)
-                diff = now_aware - last_aware
-            else:
-                diff = now - last
+            # completed_at is UTC; the gap gate measures it the same way
+            diff = gates.elapsed_since(last_time[0])
             days  = diff.days
             hours = diff.seconds // 3600
             if days > 0:
