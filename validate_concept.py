@@ -15,26 +15,23 @@ def get_multiline(prompt):
     return "\n".join(lines)
 
 
+def require_table(c, name):
+    """Tables come from schema.sql — stop if this database predates it."""
+    c.execute("SELECT 1 FROM sqlite_master "
+              "WHERE type = 'table' AND name = ?", (name,))
+    if not c.fetchone():
+        print(f"{name} table missing. Run: python3 init_db.py")
+        sys.exit(1)
+
+
 def validate():
     db_path = os.path.expanduser(
         '~/projects/malloc-training/brain.db')
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
 
-    # Ensure table exists
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS external_validation (
-            id INTEGER PRIMARY KEY,
-            concept TEXT,
-            project_number INTEGER,
-            source TEXT,
-            question TEXT,
-            your_answer TEXT,
-            correct_answer TEXT,
-            result TEXT,
-            validated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-    conn.commit()
+    # Check before asking anything, so no answers are lost
+    require_table(c, 'external_validation')
 
     print("=" * 50)
     print("EXTERNAL CONCEPT VALIDATION")

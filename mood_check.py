@@ -16,7 +16,22 @@ def ask_number(prompt, cast):
         print("  Please enter a number.")
 
 
+def require_table(c, name):
+    """Tables come from schema.sql — stop if this database predates it."""
+    c.execute("SELECT 1 FROM sqlite_master "
+              "WHERE type = 'table' AND name = ?", (name,))
+    if not c.fetchone():
+        print(f"{name} table missing. Run: python3 init_db.py")
+        sys.exit(1)
+
+
 def mood_check():
+    # Check before asking anything, so no answers are lost
+    conn = sqlite3.connect(os.path.expanduser(
+        '~/projects/malloc-training/brain.db'))
+    require_table(conn.cursor(), 'mood_logs')
+    conn.close()
+
     print("=" * 45)
     print("PRE-SESSION STATE CHECK")
     print("Answer honestly. These are facts, not feelings.")
@@ -93,15 +108,6 @@ def _log_state(sleep, ate, days_no_break, state):
     try:
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
-        c.execute(
-            '''CREATE TABLE IF NOT EXISTS mood_logs (
-                id INTEGER PRIMARY KEY,
-                sleep_hours REAL,
-                ate TEXT,
-                days_no_break INTEGER,
-                state TEXT,
-                logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )''')
         c.execute(
             '''INSERT INTO mood_logs
                (sleep_hours, ate, days_no_break, state)

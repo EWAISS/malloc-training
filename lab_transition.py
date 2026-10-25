@@ -33,26 +33,19 @@ def get_db():
     return sqlite3.connect(DB_PATH)
 
 
-def ensure_table(c):
-    c.execute('''CREATE TABLE IF NOT EXISTS lab_transitions (
-        id INTEGER PRIMARY KEY,
-        lab TEXT,
-        course TEXT,
-        concepts_owned TEXT,
-        carried_forward TEXT,
-        watch_for TEXT,
-        key_analogy TEXT,
-        full_summary TEXT,
-        next_lab TEXT,
-        transitioned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )''')
+def require_table(c, name):
+    """Tables come from schema.sql — stop if this database predates it."""
+    c.execute("SELECT 1 FROM sqlite_master "
+              "WHERE type = 'table' AND name = ?", (name,))
+    if not c.fetchone():
+        print(f"{name} table missing. Run: python3 init_db.py")
+        sys.exit(1)
 
 
 def run_transition():
     conn = get_db()
     c = conn.cursor()
-    ensure_table(c)
-    conn.commit()
+    require_table(c, 'lab_transitions')
 
     print("=" * 60)
     print("LAB TRANSITION")

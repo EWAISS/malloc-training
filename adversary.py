@@ -3,11 +3,23 @@ import os
 import sys
 
 
+def require_table(c, name):
+    """Tables come from schema.sql — stop if this database predates it."""
+    c.execute("SELECT 1 FROM sqlite_master "
+              "WHERE type = 'table' AND name = ?", (name,))
+    if not c.fetchone():
+        print(f"{name} table missing. Run: python3 init_db.py")
+        sys.exit(1)
+
+
 def run_adversarial():
     db_path = os.path.expanduser(
         '~/projects/malloc-training/brain.db')
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
+
+    # Check before the adversarial session, so the gap report isn't lost
+    require_table(c, 'adversarial_exams')
 
     # Get last transfer exam
     c.execute(
@@ -102,19 +114,6 @@ def run_adversarial():
         (gap_report, exam_id))
 
     # Write to adversarial_exams table
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS adversarial_exams (
-            id INTEGER PRIMARY KEY,
-            phase INTEGER,
-            lab TEXT,
-            course TEXT,
-            concepts_tested TEXT,
-            gap_found TEXT,
-            gap_location TEXT,
-            resolved TEXT DEFAULT 'pending',
-            completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-
     c.execute(
         '''INSERT INTO adversarial_exams
            (phase, lab, course, concepts_tested,

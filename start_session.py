@@ -76,12 +76,27 @@ def ask_number(prompt, cast):
         print("  Please enter a number.")
 
 
+def require_table(c, name):
+    """Tables come from schema.sql — stop if this database predates it."""
+    c.execute("SELECT 1 FROM sqlite_master "
+              "WHERE type = 'table' AND name = ?", (name,))
+    if not c.fetchone():
+        print(f"{name} table missing. Run: python3 init_db.py")
+        sys.exit(1)
+
+
 # ─────────────────────────────────────────────
 # STEP 1 — MOOD CHECK
 # ─────────────────────────────────────────────
 
 def step_mood():
     banner("STEP 1 / 5 — PRE-SESSION STATE CHECK")
+
+    # Check before asking anything, so no answers are lost
+    conn = get_db()
+    require_table(conn.cursor(), 'mood_logs')
+    conn.close()
+
     print("Answer honestly. These are facts, not feelings.\n")
 
     sleep = ask_number("Hours of sleep last night: ", float)
@@ -130,15 +145,6 @@ def _log_mood(sleep, ate, days_no_break, state):
     try:
         conn = get_db()
         c = conn.cursor()
-        c.execute(
-            '''CREATE TABLE IF NOT EXISTS mood_logs (
-                id INTEGER PRIMARY KEY,
-                sleep_hours REAL,
-                ate TEXT,
-                days_no_break INTEGER,
-                state TEXT,
-                logged_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )''')
         c.execute(
             '''INSERT INTO mood_logs
                (sleep_hours, ate, days_no_break, state)
