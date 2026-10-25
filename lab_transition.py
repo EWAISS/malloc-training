@@ -8,19 +8,16 @@ and appends it to LAB_HISTORY.md.
 Run BEFORE changing ACTIVE LAB in SESSION.md.
 """
 
-import sqlite3
 import os
 import sys
 from datetime import datetime
 
+from db import PROJ, connect, find_lab
 from prompts import ask_multiline, ask_text, ask_yes_no
-
-DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
-PROJ    = os.path.expanduser('~/projects/malloc-training')
 
 
 def get_db():
-    return sqlite3.connect(DB_PATH)
+    return connect()
 
 
 def require_table(c, name):
@@ -56,10 +53,28 @@ def run_transition():
     except Exception:
         pass
 
+    found = find_lab(c, current_lab)
+    if not found:
+        print(f"ACTIVE LAB '{current_lab}' is not in the labs table.")
+        print("Run: python3 init_db.py")
+        conn.close()
+        sys.exit(1)
+    current_lab, current_course = found
+
     print(f"Completing lab : {current_lab}")
     print(f"Course         : {current_course}")
 
+    # The next lab joins the labs table here, so later scripts accept it
     next_lab = ask_text("\nNext lab name: ", required=True)
+    new_lab = None
+    found = find_lab(c, next_lab)
+    if found:
+        next_lab = found[0]
+    else:
+        next_lab = ' '.join(next_lab.split())
+        new_lab = (next_lab, ask_text(
+            f"Course for {next_lab} [{current_course}]: ",
+            default=current_course))
 
     # Check if transition already exists
     c.execute(
@@ -163,6 +178,9 @@ Connect explicitly to what {next_lab} will require.
 
     # Store in database — the replace and the insert succeed together
     with conn:
+        if new_lab:
+            c.execute('INSERT INTO labs (name, course) VALUES (?, ?)',
+                      new_lab)
         if existing:
             c.execute(
                 'DELETE FROM lab_transitions WHERE lab = ?',

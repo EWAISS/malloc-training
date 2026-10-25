@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime
 
+from db import connect
 from prompts import ask_float, ask_int, ask_text, ask_yes_no
 
 
@@ -17,8 +18,7 @@ def require_table(c, name):
 
 def mood_check():
     # Check before asking anything, so no answers are lost
-    conn = sqlite3.connect(os.path.expanduser(
-        '~/projects/malloc-training/brain.db'))
+    conn = connect()
     require_table(conn.cursor(), 'mood_logs')
     conn.close()
 
@@ -92,10 +92,8 @@ def mood_check():
 
 
 def _log_state(sleep, ate, days_no_break, state):
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
     try:
-        conn = sqlite3.connect(db_path)
+        conn = connect()
         c = conn.cursor()
         c.execute(
             '''INSERT INTO mood_logs

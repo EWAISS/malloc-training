@@ -1,20 +1,15 @@
-import sqlite3
-import os
-
-from prompts import ask_multiline, ask_text
+from db import ask_lab, connect
+from prompts import ask_multiline
 
 def store_handout():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
 
     print("=" * 40)
     print("STORE LAB HANDOUT EXTRACTION")
     print("=" * 40)
 
-    course = ask_text("Course name: ")
-    lab = ask_text("Lab name: ")
+    lab, course = ask_lab(c, "Lab name")
     functions = ask_multiline("Functions to implement:")
     grading = ask_multiline("Grading criteria:")
     autograder = ask_multiline("Autograder behavior:")
@@ -25,18 +20,18 @@ def store_handout():
     chapters = ask_multiline("Book chapters:")
     raw = ask_multiline("Full raw extraction:")
 
-    c.execute('''INSERT INTO lab_handouts
-                 (course, lab, functions_to_implement,
-                  grading_criteria, autograder_behavior,
-                  critical_constraints, edge_cases,
-                  required_tools, hardest_concept,
-                  book_chapters, raw_extraction)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
-              (course, lab, functions, grading,
-               autograder, constraints, edges,
-               tools, hardest, chapters, raw))
+    with conn:
+        c.execute('''INSERT INTO lab_handouts
+                     (course, lab, functions_to_implement,
+                      grading_criteria, autograder_behavior,
+                      critical_constraints, edge_cases,
+                      required_tools, hardest_concept,
+                      book_chapters, raw_extraction)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?)''',
+                  (course, lab, functions, grading,
+                   autograder, constraints, edges,
+                   tools, hardest, chapters, raw))
 
-    conn.commit()
     conn.close()
     print(f"\nHandout stored for {course} — {lab}")
     print("git add . && git commit -m 'Store handout' && git push")

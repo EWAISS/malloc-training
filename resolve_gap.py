@@ -9,13 +9,22 @@ import sqlite3
 import os
 import sys
 
+from db import connect
 from prompts import ask_int, ask_multiline, ask_text, ask_yes_no
 
-DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
+
+def ask_project_number(c, prompt):
+    """A project number that exists in brain.db. Re-asks until it does."""
+    while True:
+        number = ask_int(prompt, 1)
+        c.execute('SELECT 1 FROM projects WHERE number = ?', (number,))
+        if c.fetchone():
+            return number
+        print(f"  Project {number} is not in brain.db.")
 
 
 def resolve_gap():
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect()
     c = conn.cursor()
 
     print("=" * 55)
@@ -77,7 +86,8 @@ def resolve_gap():
                    ask_text("Analogy that clicked: "),
                    ask_text("Exact wording that clicked: "),
                    ask_text("Watch for recurrence: "),
-                   ask_int("Project number where it resolved: ", 1))
+                   ask_project_number(
+                       c, "Project number where it resolved: "))
 
     # Everything is collected — write it all or nothing
     with conn:

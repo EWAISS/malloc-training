@@ -1,8 +1,38 @@
-import sqlite3
-import os
 import sys
 
+from db import connect
 from prompts import ask_choice, ask_int, ask_multiline, ask_text
+
+
+def pick_concept(c, unvalidated):
+    """(name, project_number) of a concept that exists. Re-asks until
+    the answer is a list number or the name of a recorded concept."""
+    while True:
+        choice = ask_text(
+            "Concept being validated (list number, or type the name): ",
+            required=True)
+        if choice.isdigit():
+            if 1 <= int(choice) <= len(unvalidated):
+                return unvalidated[int(choice) - 1]
+            print(f"  No item {choice} in the list above. "
+                  "Pick a listed number or type a concept name.")
+            continue
+
+        c.execute('''SELECT name, project_number FROM concepts
+                     WHERE lower(trim(name)) = lower(?)
+                     ORDER BY project_number''', (choice,))
+        matches = c.fetchall()
+        if not matches:
+            print(f"  No concept named {choice!r} in brain.db.")
+            continue
+        if len(matches) == 1:
+            return matches[0]
+        numbers = [m[1] for m in matches]
+        print(f"  {matches[0][0]!r} was learned in projects {numbers}.")
+        while True:
+            n = ask_int("Which project? ", 1)
+            if n in numbers:
+                return matches[numbers.index(n)]
 
 
 def require_table(c, name):
@@ -15,9 +45,7 @@ def require_table(c, name):
 
 
 def validate():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
 
     # Check before asking anything, so no answers are lost
@@ -54,15 +82,9 @@ def validate():
     else:
         print("All owned concepts are externally validated.\n")
 
-    # Pick by number so the name matches the concepts table exactly
-    choice = ask_text(
-        "Concept being validated (list number, or type the name): ")
-    if choice.isdigit() and 1 <= int(choice) <= len(unvalidated):
-        concept, project_num = unvalidated[int(choice) - 1]
-        print(f"  → {concept} (Project {project_num})")
-    else:
-        concept     = choice
-        project_num = ask_int("Project number when learned: ", 1)
+    # The name must match the concepts table exactly
+    concept, project_num = pick_concept(c, unvalidated)
+    print(f"  → {concept} (Project {project_num})")
     source      = ask_text(
         "Source (e.g. CS:APP 9.9.12, K&R Ex 5.3, "
         "CMU F23 Exam 2 Q4): ")

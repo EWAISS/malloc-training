@@ -3,3 +3,6 @@ CONTEXT_PACK.md
 
 # Bytecode from the shared modules (prompts.py, ...)
 __pycache__/
+
+# Backups init_db.py makes before migrating brain.db
+brain.db.bak-*

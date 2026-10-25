@@ -22,6 +22,7 @@ import sys
 import subprocess
 from datetime import datetime
 
+from db import connect
 from prompts import ask_float, ask_int, ask_yes_no
 
 try:
@@ -30,7 +31,6 @@ try:
 except ImportError:
     HAS_PYTZ = False
 
-DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
 PROJ    = os.path.expanduser('~/projects/malloc-training')
 
 
@@ -45,7 +45,7 @@ def banner(title):
 
 
 def get_db():
-    return sqlite3.connect(DB_PATH)
+    return connect()
 
 
 def get_session_field(field):
@@ -176,8 +176,12 @@ def step_validation_gate():
     total_projects = c.fetchone()[0]
 
     try:
-        c.execute('SELECT COUNT(*) FROM external_validation '
-                  "WHERE result = 'pass'")
+        # Only passes for a recorded concept count toward the debt
+        c.execute('''SELECT COUNT(*) FROM external_validation ev
+                     JOIN concepts con
+                       ON con.name = ev.concept
+                      AND con.project_number = ev.project_number
+                     WHERE ev.result = 'pass' ''')
         total_validated = c.fetchone()[0]
     except sqlite3.OperationalError:
         total_validated = 0

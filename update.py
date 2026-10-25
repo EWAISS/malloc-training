@@ -1,9 +1,12 @@
-import sqlite3
 import os
 import re
 import sys
 
-from prompts import (ask_int, ask_multiline, ask_text, ask_yes_no)
+from db import ask_lab, connect, find_lab
+from prompts import (ask_choice, ask_int, ask_multiline, ask_text,
+                     ask_yes_no)
+
+CONCEPT_STATUSES = ('owned', 'cracked', 'struggling')
 
 
 # Every key the auto block may contain. Only these start a new
@@ -45,9 +48,7 @@ def parse_auto_block(block):
 
 
 def get_db():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    return sqlite3.connect(db_path)
+    return connect()
 
 
 def duplicate_guard(c, number):
@@ -254,10 +255,8 @@ def update_auto(block):
         'number':         number,
         'name':           d.get('name', ''),
         'phase':          phase,
-        'lab':            d.get('lab', ''),
-        'course':         d.get('course', ''),
         'concept':        d.get('concept', ''),
-        'status':         d.get('status', ''),
+        'status':         d.get('status', '').lower(),
         'prediction':     d.get('prediction', ''),
         'actual_output':  d.get('actual_output', ''),
         'what_worked':    d.get('what_worked', ''),
@@ -267,7 +266,7 @@ def update_auto(block):
         'code_review':    d.get('code_review', ''),
         'key_exchange':   d.get('key_exchange', 'none'),
         'appears_in':     d.get('appears_in_future_labs', ''),
-        'concept_status': d.get('concept_status', ''),
+        'concept_status': d.get('concept_status', '').lower(),
         'how_clicked':    d.get('how_clicked', ''),
         'struggled':      d.get('struggled_with', ''),
         'resolved':       d.get('resolved_by', ''),
@@ -280,6 +279,21 @@ def update_auto(block):
         'next_must':      d.get('next_must', ''),
         'position':       d.get('position_reasoning', ''),
     }
+
+    # The block's lab must be a known lab; course always comes from it
+    lab = find_lab(c, d.get('lab', ''))
+    if not lab:
+        print(f"\nAuto block has lab {d.get('lab', '')!r}, "
+              f"which is not a known lab.")
+        lab = ask_lab(c)
+    r['lab'], r['course'] = lab
+
+    if r['concept_status'] not in CONCEPT_STATUSES:
+        print(f"\nAuto block has concept_status "
+              f"{r['concept_status']!r}.")
+        r['concept_status'] = ask_choice(
+            "Concept status (owned/cracked/struggling): ",
+            CONCEPT_STATUSES)
 
     r['final_code'] = ask_multiline("\nPaste final code.")
 
@@ -329,10 +343,10 @@ def update_interactive():
     r = {'number': number}
     r['name']           = ask_text("Project name: ")
     r['phase']          = ask_int("Phase (1-5): ", 1, 5)
-    r['lab']            = ask_text("Lab name: ")
-    r['course']         = ask_text("Course name: ")
+    r['lab'], r['course'] = ask_lab(c, "Lab name")
     r['concept']        = ask_text("Core concept: ")
-    r['status']         = ask_text("Status (owned/cracked/struggling): ")
+    r['status']         = ask_text(
+        "Status (owned/cracked/struggling): ").lower()
     r['prediction']     = ask_text("Your prediction was: ")
     r['actual_output']  = ask_text("Actual output was: ")
     r['what_worked']    = ask_text("What worked: ")
@@ -348,7 +362,8 @@ def update_interactive():
     r['appears_in']     = ask_text("Appears in future labs: ")
     r['final_code']     = ask_multiline("\nPaste final code.")
 
-    r['concept_status'] = ask_text("\nConcept status (owned/cracked): ")
+    r['concept_status'] = ask_choice(
+        "\nConcept status (owned/cracked/struggling): ", CONCEPT_STATUSES)
     r['how_clicked']    = ask_text("How it clicked: ")
     r['struggled']      = ask_text("Struggled with: ")
     r['resolved']       = ask_text("Resolved by: ")

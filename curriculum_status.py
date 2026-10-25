@@ -9,8 +9,9 @@ import sqlite3
 import os
 import re
 
+from db import connect
+
 PROJ    = os.path.expanduser('~/projects/malloc-training')
-DB_PATH = os.path.join(PROJ, 'brain.db')
 CURR_PATH = os.path.join(PROJ, 'CURRICULUM.md')
 REASON_PATH = os.path.join(PROJ, 'CURRICULUM_REASONING.md')
 
@@ -18,7 +19,7 @@ REASON_PATH = os.path.join(PROJ, 'CURRICULUM_REASONING.md')
 def get_completed():
     """Get all completed project numbers from database."""
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = connect()
         c = conn.cursor()
         c.execute(
             'SELECT number, name, concept, status '

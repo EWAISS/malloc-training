@@ -3,8 +3,9 @@ import sys
 import sqlite3
 import subprocess
 
+from db import connect
+
 BASE = os.path.expanduser('~/projects/malloc-training')
-DB_PATH = os.path.join(BASE, 'brain.db')
 
 passed = []
 failed = []
@@ -147,7 +148,7 @@ required_tables = [
 ]
 
 try:
-    conn = sqlite3.connect(DB_PATH)
+    conn = connect()
     c = conn.cursor()
     c.execute("SELECT name FROM sqlite_master WHERE type='table'")
     existing_tables = [row[0] for row in c.fetchall()]

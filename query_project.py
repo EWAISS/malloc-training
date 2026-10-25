@@ -2,12 +2,11 @@ import sqlite3
 import os
 import sys
 
+from db import connect
 from prompts import ask_int
 
 def query_project(number):
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
 
     print(f"=" * 60)

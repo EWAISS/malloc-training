@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
+from db import connect
 from prompts import ask_yes_no
 
 try:
@@ -151,9 +152,7 @@ def clear_gap_gate():
         print("Gate stays closed. Repeat the quiz with Claude.")
         return
 
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
     try:
         c.execute('INSERT INTO gap_gate_clears DEFAULT VALUES')
@@ -220,9 +219,7 @@ def print_verification_block(c, active_lab):
 # ─────────────────────────────────────────────
 
 def generate_mini_context():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
     now = get_cairo_time()
 
@@ -297,9 +294,7 @@ def generate_mini_context():
 # ─────────────────────────────────────────────
 
 def generate_context():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
     now = get_cairo_time()
 
@@ -662,7 +657,7 @@ def generate_context():
         pending = []
         current = {}
         try:
-            conn3 = sqlite3.connect(db_path)
+            conn3 = connect()
             c3 = conn3.cursor()
             c3.execute('SELECT number FROM projects')
             done_nums = {row[0] for row in c3.fetchall()}
@@ -740,7 +735,7 @@ def generate_context():
 
     # ── VERIFICATION BLOCK ──────────────────────
     # Reopen briefly to print this last
-    conn2 = sqlite3.connect(db_path)
+    conn2 = connect()
     c2 = conn2.cursor()
     print_verification_block(c2, active_lab)
     conn2.close()

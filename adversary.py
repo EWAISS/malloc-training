@@ -1,7 +1,6 @@
-import sqlite3
-import os
 import sys
 
+from db import clean_report, connect
 from prompts import ask_multiline, ask_text, ask_yes_no
 
 
@@ -15,9 +14,7 @@ def require_table(c, name):
 
 
 def run_adversarial():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
 
     # Check before the adversarial session, so the gap report isn't lost
@@ -43,7 +40,7 @@ def run_adversarial():
     course    = exam[3]
     existing  = exam[4]
 
-    if existing and existing.strip() not in ('', 'none'):
+    if existing is not None:
         print(f"Phase {phase} {lab} already has an adversarial report.")
         if not ask_yes_no("Replace it? (yes/no): "):
             conn.close()
@@ -92,8 +89,8 @@ def run_adversarial():
 
     ask_text("\nPress ENTER when you have finished the adversarial session...")
 
-    gap_report = ask_multiline(
-        "\nPaste the adversary's final gap report (one sentence).").strip()
+    gap_report = clean_report(ask_multiline(
+        "\nPaste the adversary's final gap report (one sentence)."))
 
     if not gap_report:
         print("\nERROR: No gap report provided. Exam not recorded.")

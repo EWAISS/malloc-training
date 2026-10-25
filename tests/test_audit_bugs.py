@@ -273,7 +273,11 @@ def test_bug07_bogus_validation_does_not_clear_debt(env):
         except Exception:
             pass   # the schema refusing it is also a fix
     r = env.run('start_session.py', input=SHARP)
-    assert 'VALIDATION DEBT DETECTED' in r.out, r.out
+    # Either the debt still shows, or db_check stops the session over
+    # the orphan row first — the bogus pass must never clear the debt.
+    assert 'Validation rate OK' not in r.out, r.out
+    assert ('VALIDATION DEBT DETECTED' in r.out
+            or 'ORPHAN: external_validation' in r.out), r.out
 
 
 # ─────────────────────────────────────────────

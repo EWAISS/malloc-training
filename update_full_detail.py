@@ -11,15 +11,15 @@ import sqlite3
 import os
 import sys
 
+from db import connect
 from prompts import (ask_choice, ask_int, ask_multiline, ask_text,
                      ask_yes_no)
 
-DB_PATH = os.path.expanduser('~/projects/malloc-training/brain.db')
 PROJ    = os.path.expanduser('~/projects/malloc-training')
 
 
 def get_db():
-    return sqlite3.connect(DB_PATH)
+    return connect()
 
 
 def update_full_detail():

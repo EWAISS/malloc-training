@@ -2,19 +2,29 @@ import sqlite3
 import os
 import sys
 
+from db import DB_PATH, connect
+
+SCHEMA_VERSION = 1
+
 
 def check_database():
-    db_path = os.path.expanduser(
-        '~/projects/malloc-training/brain.db')
-
-    if not os.path.exists(os.path.expanduser(db_path)):
+    if not os.path.exists(DB_PATH):
         print("brain.db not found. Nothing to check.")
         sys.exit(0)
 
-    conn = sqlite3.connect(db_path)
+    conn = connect()
     c = conn.cursor()
     errors = []
     warnings = []
+
+    # An old database has none of the schema's guarantees
+    version = c.execute('PRAGMA user_version').fetchone()[0]
+    if version < SCHEMA_VERSION:
+        print(f"brain.db is schema version {version}; "
+              f"scripts expect {SCHEMA_VERSION}.")
+        print("Run: python3 init_db.py   (it backs up brain.db first)")
+        conn.close()
+        sys.exit(1)
 
     # Duplicate project numbers
     c.execute('''SELECT number, COUNT(*) as cnt
@@ -32,15 +42,17 @@ def check_database():
         warnings.append(
             f"NULL HANDOFF: Project {p[0]} — {p[1]}")
 
-    # Project / concept count mismatch
-    c.execute('SELECT COUNT(*) FROM projects')
-    project_count = c.fetchone()[0]
-    c.execute('SELECT COUNT(*) FROM concepts')
-    concept_count = c.fetchone()[0]
-    if project_count != concept_count:
+    # Every project has exactly one concept row of its own.
+    # (Comparing totals missed a concept attached to the wrong project.)
+    c.execute('''SELECT p.number, COUNT(con.id)
+                 FROM projects p
+                 LEFT JOIN concepts con ON con.project_number = p.number
+                 GROUP BY p.number
+                 HAVING COUNT(con.id) != 1''')
+    for number, n in c.fetchall():
         errors.append(
-            f"MISMATCH: {project_count} projects "
-            f"but {concept_count} concepts")
+            f"MISMATCH: Project {number} has {n} concept rows "
+            f"(expected 1)")
 
     # Orphaned narratives (narrative exists, project does not)
     c.execute('''SELECT pn.project_number
@@ -52,6 +64,16 @@ def check_database():
         errors.append(
             f"ORPHAN NARRATIVE: project_number={o[0]} "
             f"has no parent in projects table")
+
+    # Any other row whose foreign key points at nothing
+    # (orphan concepts, quiz records, validations, unknown labs, ...)
+    c.execute('PRAGMA foreign_key_check')
+    for table, rowid, parent, _ in c.fetchall():
+        if table == 'project_narrative':
+            continue  # reported above
+        errors.append(
+            f"ORPHAN: {table} row {rowid} points at a missing "
+            f"{parent} row")
 
     # Phase transfer exams missing adversarial gap report
     try:
