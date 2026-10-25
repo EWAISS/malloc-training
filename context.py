@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
+import gates
 from db import connect
 from prompts import ask_yes_no
 
@@ -48,102 +49,6 @@ def get_cairo_time():
 # ─────────────────────────────────────────────
 # GATE CHECKS — run before anything else prints
 # ─────────────────────────────────────────────
-
-def adversarial_gate(c):
-    """Block if last phase transfer exam has no gap report."""
-    try:
-        c.execute(
-            '''SELECT phase, lab, adversarial_gap_report
-               FROM transfer_exams
-               ORDER BY completed_at DESC LIMIT 1''')
-        last_exam = c.fetchone()
-        if last_exam:
-            gap = last_exam[2]
-            if not gap or gap.strip() in ('', 'none'):
-                print("=" * 60)
-                print("BLOCKED — ADVERSARIAL EXAM NOT COMPLETED")
-                print("=" * 60)
-                print(
-                    f"Phase {last_exam[0]} | {last_exam[1]}\n"
-                    f"Transfer exam has no adversarial gap report.\n\n"
-                    f"Run:  python3 adversary.py\n"
-                    f"Complete it, then re-run context.py."
-                )
-                print("=" * 60)
-                return False
-    except sqlite3.OperationalError:
-        pass  # table may not exist yet — no exams taken
-    return True
-
-
-def gap_gate(c, now):
-    """
-    If > 7 days since last project: hide curriculum position,
-    show spaced repetition gate instead.
-    Returns True if gate is ACTIVE (caller should exit after printing).
-    """
-    c.execute(
-        '''SELECT completed_at FROM projects
-           ORDER BY number DESC LIMIT 1''')
-    last_time = c.fetchone()
-    if not last_time or not last_time[0]:
-        return False
-    last_activity = last_time[0]
-
-    # A passed spaced repetition quiz also counts as activity
-    try:
-        c.execute('SELECT MAX(cleared_at) FROM gap_gate_clears')
-        cleared = c.fetchone()[0]
-        if cleared and cleared > last_activity:
-            last_activity = cleared
-    except sqlite3.OperationalError:
-        pass  # table missing (pre-schema.sql database) — gate never cleared
-
-    try:
-        last = datetime.fromisoformat(last_activity)
-        if HAS_PYTZ:
-            cairo = pytz.timezone('Africa/Cairo')
-            now_aware = datetime.now(cairo)
-            last_aware = last.replace(
-                tzinfo=pytz.utc).astimezone(cairo)
-            diff = now_aware - last_aware
-        else:
-            # completed_at is UTC — compare against UTC now
-            diff = datetime.now(timezone.utc).replace(
-                tzinfo=None) - last
-
-        days = diff.days
-        if days <= 7:
-            return False
-
-        # Gate is active
-        print("=" * 60)
-        print(f"GAP GATE ACTIVE — {days} days since last project")
-        print("=" * 60)
-        print(
-            "New material is locked.\n"
-            "Before continuing, Claude must quiz these concepts:"
-        )
-
-        c.execute(
-            '''SELECT name FROM concepts
-               WHERE status = 'owned'
-               ORDER BY project_number DESC LIMIT 5''')
-        for row in c.fetchall():
-            print(f"  — {row[0]}")
-
-        print(
-            "\nTell Claude: 'Run spaced repetition quiz now.'\n"
-            "After passing all 5, run:\n"
-            "  python3 context.py --clear-gap-gate\n"
-            "Curriculum position is hidden until gate clears."
-        )
-        print("=" * 60)
-        return True
-
-    except Exception:
-        return False
-
 
 def clear_gap_gate():
     """Record a passed spaced repetition quiz so the gap gate opens."""
@@ -223,7 +128,9 @@ def generate_mini_context():
     c = conn.cursor()
     now = get_cairo_time()
 
-    if not adversarial_gate(c):
+    missing = gates.missing_adversarial_reports(c)
+    if missing:
+        gates.print_adversarial_block(missing, "context.py")
         conn.close()
         sys.exit(1)
 
@@ -245,9 +152,12 @@ def generate_mini_context():
         conn.close()
         return
 
-    if gap_gate(c, now):
+    days = gates.gap_gate(c)
+    if days is not None:
+        gates.print_gap_gate(c, days)
         conn.close()
         return
+    hidden = gates.next_project_hidden(c)
 
     c.execute(
         '''SELECT number, name, phase
@@ -255,7 +165,10 @@ def generate_mini_context():
     last = c.fetchone()
     print(f"Last   : Project {last[0]} — {last[1]}")
     print(f"Phase  : {last[2]}")
-    print(f"Next   : Project {last[0] + 1}")
+    if hidden:
+        print(f"Next   : HIDDEN — {hidden}")
+    else:
+        print(f"Next   : Project {last[0] + 1}")
 
     c.execute(
         '''SELECT handoff FROM projects
@@ -299,7 +212,9 @@ def generate_context():
     now = get_cairo_time()
 
     # ── GATES ──────────────────────────────────
-    if not adversarial_gate(c):
+    missing = gates.missing_adversarial_reports(c)
+    if missing:
+        gates.print_adversarial_block(missing, "context.py")
         conn.close()
         sys.exit(1)
 
@@ -324,9 +239,12 @@ def generate_context():
         return
 
     # ── TIME GAP GATE ───────────────────────────
-    if gap_gate(c, now):
+    days = gates.gap_gate(c)
+    if days is not None:
+        gates.print_gap_gate(c, days)
         conn.close()
         return
+    hidden = gates.next_project_hidden(c)
 
     # ── TIME SINCE LAST PROJECT ─────────────────
     c.execute(
@@ -363,7 +281,10 @@ def generate_context():
     print(f"  Course         : {last[3]}")
     print(f"  Lab            : {last[2]}")
     print(f"  Phase          : {last[4]}")
-    print(f"  Next project   : {last[0] + 1}")
+    if hidden:
+        print(f"  Next project   : HIDDEN — {hidden}")
+    else:
+        print(f"  Next project   : {last[0] + 1}")
 
     # ── CONCEPTS OWNED ──────────────────────────
     print(f"\nCONCEPTS OWNED — {active_lab} (last 10):")
@@ -691,7 +612,7 @@ def generate_context():
             print(f"  Completed: {len(done_nums)}")
             print(f"  Pending  : {len(not_done)}")
 
-            if next_p:
+            if next_p and not hidden:
                 next_num = next_p.get('number')
                 print(f"\nNEXT PROJECT FROM CURRICULUM:")
                 print(f"  Project {next_p.get('number')} — "
@@ -702,7 +623,7 @@ def generate_context():
         except Exception as e:
             print(f"  (Could not parse CURRICULUM.md: {e})")
 
-    if os.path.exists(reason_path):
+    if os.path.exists(reason_path) and not hidden:
         print(f"\nNEXT PROJECT REASONING:")
         try:
             # Find the block for the actual next project,

@@ -22,6 +22,7 @@ import sys
 import subprocess
 from datetime import datetime
 
+import gates
 from db import connect
 from prompts import ask_float, ask_int, ask_yes_no
 
@@ -170,30 +171,13 @@ def step_validation_gate():
     banner("STEP 3 / 5 — EXTERNAL VALIDATION GATE")
 
     conn = get_db()
-    c = conn.cursor()
-
-    c.execute('SELECT COUNT(*) FROM projects')
-    total_projects = c.fetchone()[0]
-
-    try:
-        # Only passes for a recorded concept count toward the debt
-        c.execute('''SELECT COUNT(*) FROM external_validation ev
-                     JOIN concepts con
-                       ON con.name = ev.concept
-                      AND con.project_number = ev.project_number
-                     WHERE ev.result = 'pass' ''')
-        total_validated = c.fetchone()[0]
-    except sqlite3.OperationalError:
-        total_validated = 0
-
+    total_projects, required, total_validated, debt = \
+        gates.validation_debt(conn.cursor())
     conn.close()
 
     if total_projects == 0:
         print("No projects yet — validation gate not applicable.")
         return True
-
-    required = (total_projects // 10) * 2
-    debt     = max(0, required - total_validated)
 
     if debt > 0:
         print(f"VALIDATION DEBT DETECTED")
@@ -223,7 +207,7 @@ def step_validation_gate():
 # FIX: surfaces cross-lab weakness patterns
 # ─────────────────────────────────────────────
 
-def step_context(validation_ok):
+def step_context():
     banner("STEP 4 / 5 — CONTEXT GENERATION")
 
     conn = get_db()
@@ -250,6 +234,13 @@ def step_context(validation_ok):
         conn.close()
         return
 
+    # ── GAP GATE — same gate context.py applies ─
+    days = gates.gap_gate(c)
+    if days is not None:
+        gates.print_gap_gate(c, days)
+        conn.close()
+        return
+
     # ── LAST 5 PROJECTS (was LIMIT 1) ───────────
     c.execute(
         '''SELECT number, name, concept, status,
@@ -261,10 +252,11 @@ def step_context(validation_ok):
 
     print(f"\nPhase  : {last[6]}")
 
-    if validation_ok:
-        print(f"Next project   : {last[0] + 1}")
+    hidden = gates.next_project_hidden(c)
+    if hidden:
+        print(f"Next project   : HIDDEN — {hidden}")
     else:
-        print(f"Next project   : HIDDEN — clear validation debt first")
+        print(f"Next project   : {last[0] + 1}")
 
     print(f"\nLAST 5 PROJECTS:")
     for p in last_five:
@@ -415,7 +407,11 @@ def step_verification():
     # Q5 — curriculum reasoning check
     # Only shown if CURRICULUM_REASONING.md exists
     reasoning_path = os.path.join(PROJ, 'CURRICULUM_REASONING.md')
-    if os.path.exists(reasoning_path):
+    # Hidden while a gate is shut — Q5 would reveal the next number
+    hidden = gates.next_project_hidden(c)
+    if hidden:
+        lines.append(f"Q5 Next project    : HIDDEN — {hidden}")
+    elif os.path.exists(reasoning_path):
         # Numbering is global, not per lab — a new lab
         # with no projects yet must not restart at 1
         c.execute('SELECT MAX(number) FROM projects')
@@ -474,10 +470,10 @@ def main():
     step_db_check()
 
     # Step 3 — validation debt gate
-    validation_ok = step_validation_gate()
+    step_validation_gate()
 
-    # Step 4 — context: last 5 projects + cross-lab weaknesses
-    step_context(validation_ok)
+    # Step 4 — context: gap gate, last 5 projects, cross-lab weaknesses
+    step_context()
 
     # Step 5 — machine-checked verification answers
     step_verification()

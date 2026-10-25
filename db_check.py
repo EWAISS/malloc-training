@@ -2,7 +2,8 @@ import sqlite3
 import os
 import sys
 
-from db import DB_PATH, connect
+import gates
+from db import DB_PATH, connect, session_field
 
 SCHEMA_VERSION = 1
 
@@ -76,21 +77,11 @@ def check_database():
             f"{parent} row")
 
     # Phase transfer exams missing adversarial gap report
-    try:
-        c.execute('''SELECT phase, lab
-                     FROM transfer_exams
-                     WHERE adversarial_gap_report IS NULL
-                     OR adversarial_gap_report = ''
-                     OR adversarial_gap_report = 'none' ''')
-        for m in c.fetchall():
-            errors.append(
-                f"BLOCKED: Phase {m[0]} {m[1]} "
-                f"transfer exam missing adversarial gap report. "
-                f"Run: python3 adversary.py")
-    except sqlite3.OperationalError:
-        warnings.append(
-            "transfer_exams table missing adversarial_gap_report "
-            "column — run init_db.py to migrate")
+    for phase, lab in gates.missing_adversarial_reports(c):
+        errors.append(
+            f"BLOCKED: Phase {phase} {lab} "
+            f"transfer exam missing adversarial gap report. "
+            f"Run: python3 adversary.py")
 
     # External validations: flag concepts marked owned but never validated
     try:
@@ -113,23 +104,13 @@ def check_database():
         pass  # table may not exist yet
 
 
-    # Lab transition missing for completed labs
-    try:
-        c.execute(
-            '''SELECT DISTINCT p.lab
-               FROM projects p
-               LEFT JOIN lab_transitions lt ON lt.lab = p.lab
-               WHERE lt.id IS NULL
-               GROUP BY p.lab
-               HAVING COUNT(p.id) >= 10''')
-        missing = c.fetchall()
-        for mt in missing:
-            warnings.append(
-                f"NO LAB TRANSITION: '{mt[0]}' has 10+ projects "
-                f"but no transition summary. "
-                f"Run: python3 lab_transition.py")
-    except sqlite3.OperationalError:
-        pass
+    # Lab transition missing for finished labs (not the active one)
+    for lab in gates.missing_lab_transitions(
+            c, session_field("ACTIVE LAB")):
+        warnings.append(
+            f"NO LAB TRANSITION: '{lab}' has 10+ projects "
+            f"but no transition summary. "
+            f"Run: python3 lab_transition.py")
 
     conn.close()
 
