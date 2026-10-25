@@ -69,33 +69,33 @@ def resolve_gap():
         conn.close()
         return
 
-    c.execute(
-        '''UPDATE adversarial_exams
-           SET resolved = 'yes', resolution = ?
-           WHERE id = ?''',
-        (how_resolved, gap_id))
-
     # Also log to weakness_patterns if not already there
+    pattern = None
     if ask_yes_no("\nLog repair as weakness pattern? (yes/no): "):
-        concept    = ask_text("Concept: ")
-        misconception = ask_text("Specific misconception: ")
-        analogy    = ask_text("Analogy that clicked: ")
-        wording    = ask_text("Exact wording that clicked: ")
-        watch      = ask_text("Watch for recurrence: ")
-        proj_num   = ask_int("Project number where it resolved: ", 1)
+        pattern = (ask_text("Concept: "),
+                   ask_text("Specific misconception: "),
+                   ask_text("Analogy that clicked: "),
+                   ask_text("Exact wording that clicked: "),
+                   ask_text("Watch for recurrence: "),
+                   ask_int("Project number where it resolved: ", 1))
 
+    # Everything is collected — write it all or nothing
+    with conn:
         c.execute(
-            '''INSERT INTO weakness_patterns
-               (concept, specific_misconception,
-                exact_analogy_that_clicked,
-                exact_wording_that_clicked,
-                watch_for_recurrence,
-                project_number)
-               VALUES (?,?,?,?,?,?)''',
-            (concept, misconception, analogy,
-             wording, watch, proj_num))
-
-    conn.commit()
+            '''UPDATE adversarial_exams
+               SET resolved = 'yes', resolution = ?
+               WHERE id = ?''',
+            (how_resolved, gap_id))
+        if pattern:
+            c.execute(
+                '''INSERT INTO weakness_patterns
+                   (concept, specific_misconception,
+                    exact_analogy_that_clicked,
+                    exact_wording_that_clicked,
+                    watch_for_recurrence,
+                    project_number)
+                   VALUES (?,?,?,?,?,?)''',
+                pattern)
     conn.close()
 
     print(f"\nGap ID {gap_id} marked as resolved.")

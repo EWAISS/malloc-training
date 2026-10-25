@@ -72,9 +72,6 @@ def run_transition():
                 "Replace? (yes/no): "):
             conn.close()
             return
-        c.execute(
-            'DELETE FROM lab_transitions WHERE lab = ?',
-            (current_lab,))
 
     # Pull owned concepts for this lab
     c.execute(
@@ -164,17 +161,20 @@ Connect explicitly to what {next_lab} will require.
         elif line.startswith('KEY ANALOGY:'):
             key_analogy = line.split(':', 1)[1].strip()
 
-    # Store in database
-    c.execute(
-        '''INSERT INTO lab_transitions
-           (lab, course, concepts_owned, carried_forward,
-            watch_for, key_analogy, full_summary, next_lab)
-           VALUES (?,?,?,?,?,?,?,?)''',
-        (current_lab, current_course,
-         concepts_owned, carried_forward,
-         watch_for, key_analogy, summary, next_lab))
-
-    conn.commit()
+    # Store in database — the replace and the insert succeed together
+    with conn:
+        if existing:
+            c.execute(
+                'DELETE FROM lab_transitions WHERE lab = ?',
+                (current_lab,))
+        c.execute(
+            '''INSERT INTO lab_transitions
+               (lab, course, concepts_owned, carried_forward,
+                watch_for, key_analogy, full_summary, next_lab)
+               VALUES (?,?,?,?,?,?,?,?)''',
+            (current_lab, current_course,
+             concepts_owned, carried_forward,
+             watch_for, key_analogy, summary, next_lab))
     conn.close()
 
     # Append to LAB_HISTORY.md

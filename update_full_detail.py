@@ -57,8 +57,6 @@ def update_full_detail():
                 "Full detail already exists. Replace? (yes/no): "):
             conn.close()
             return
-        c.execute('DELETE FROM project_full_detail '
-                  'WHERE project_number = ?', (number,))
 
     # ── FULL DETAIL ──────────────────────────────
     print("\n--- PROJECT FULL DETAIL ---")
@@ -84,28 +82,14 @@ def update_full_detail():
     memory_evolution = ask_multiline(
         "\nHow your memory model evolved this project:")
 
-    c.execute(
-        '''INSERT INTO project_full_detail
-           (project_number, full_specification,
-            micro_projects_generated,
-            all_quiz_questions, all_quiz_answers,
-            exact_failure_moments, exact_success_moments,
-            memory_model_evolution)
-           VALUES (?,?,?,?,?,?,?,?)''',
-        (number, full_spec, micro,
-         all_questions, all_answers,
-         failures, successes, memory_evolution))
-
-    print("\nFull detail saved.")
-
     # ── QUIZ RECORDS ─────────────────────────────
     print("\n--- QUIZ RECORDS ---")
     print("Enter each quiz question individually.")
     print("Press Enter with empty question to stop.\n")
 
-    question_num = 1
+    quiz = []
     while True:
-        print(f"Question {question_num}:")
+        print(f"Question {len(quiz) + 1}:")
         q_text = ask_text("  Question text (or Enter to stop): ")
         if not q_text:
             break
@@ -118,26 +102,43 @@ def update_full_detail():
                                  ('pass', 'fail'))
         is_novel_int = 1 if ask_yes_no(
             "  Novel question? Never asked before? (yes/no): ") else 0
+        quiz.append((q_text, your_answer, evaluation,
+                     is_novel_int, result))
+        print()
 
+    # Everything is collected — write it all or nothing
+    with conn:
+        if existing:
+            c.execute('DELETE FROM project_full_detail '
+                      'WHERE project_number = ?', (number,))
         c.execute(
-            '''INSERT INTO quiz_records
-               (project_number, question_number,
-                question_text, your_answer,
-                evaluation, is_novel_question,
-                result, concept, lab, course)
-               VALUES (?,?,?,?,?,?,?,?,?,?)''',
-            (number, question_num, q_text,
-             your_answer, evaluation,
-             is_novel_int, result,
-             concept, lab, course))
+            '''INSERT INTO project_full_detail
+               (project_number, full_specification,
+                micro_projects_generated,
+                all_quiz_questions, all_quiz_answers,
+                exact_failure_moments, exact_success_moments,
+                memory_model_evolution)
+               VALUES (?,?,?,?,?,?,?,?)''',
+            (number, full_spec, micro,
+             all_questions, all_answers,
+             failures, successes, memory_evolution))
 
-        print(f"  Question {question_num} saved.\n")
-        question_num += 1
-
-    conn.commit()
+        for question_num, (q_text, your_answer, evaluation,
+                           is_novel_int, result) in enumerate(quiz, 1):
+            c.execute(
+                '''INSERT INTO quiz_records
+                   (project_number, question_number,
+                    question_text, your_answer,
+                    evaluation, is_novel_question,
+                    result, concept, lab, course)
+                   VALUES (?,?,?,?,?,?,?,?,?,?)''',
+                (number, question_num, q_text,
+                 your_answer, evaluation,
+                 is_novel_int, result,
+                 concept, lab, course))
     conn.close()
 
-    print(f"\nFull detail and {question_num - 1} quiz records saved.")
+    print(f"\nFull detail and {len(quiz)} quiz records saved.")
     print(f"Project {number} is now fully documented.")
     print(
         f"\ngit add . && git commit -m "

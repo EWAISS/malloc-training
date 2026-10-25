@@ -100,23 +100,20 @@ def run_adversarial():
         conn.close()
         return
 
-    # Write gap report to transfer_exams
-    c.execute(
-        '''UPDATE transfer_exams
-           SET adversarial_gap_report = ?
-           WHERE id = ?''',
-        (gap_report, exam_id))
-
-    # Write to adversarial_exams table
-    c.execute(
-        '''INSERT INTO adversarial_exams
-           (phase, lab, course, concepts_tested,
-            gap_found, gap_location, resolved)
-           VALUES (?,?,?,?,?,?,?)''',
-        (phase, lab, course, concepts_str,
-         'yes', gap_report, 'pending'))
-
-    conn.commit()
+    # Both records are written together or not at all
+    with conn:
+        c.execute(
+            '''UPDATE transfer_exams
+               SET adversarial_gap_report = ?
+               WHERE id = ?''',
+            (gap_report, exam_id))
+        c.execute(
+            '''INSERT INTO adversarial_exams
+               (phase, lab, course, concepts_tested,
+                gap_found, gap_location, resolved)
+               VALUES (?,?,?,?,?,?,?)''',
+            (phase, lab, course, concepts_str,
+             'yes', gap_report, 'pending'))
     conn.close()
 
     print("\nAdversarial exam recorded.")

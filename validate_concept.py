@@ -77,23 +77,27 @@ def validate():
     result = ask_choice("\nResult — did your answer match? (pass/fail): ",
                         ('pass', 'fail'))
 
-    c.execute(
-        '''INSERT INTO external_validation
-           (concept, project_number, source,
-            question, your_answer, correct_answer, result)
-           VALUES (?,?,?,?,?,?,?)''',
-        (concept, project_num, source,
-         question, your_answer, correct, result))
+    # The validation and the downgrade are written together
+    with conn:
+        c.execute(
+            '''INSERT INTO external_validation
+               (concept, project_number, source,
+                question, your_answer, correct_answer, result)
+               VALUES (?,?,?,?,?,?,?)''',
+            (concept, project_num, source,
+             question, your_answer, correct, result))
+        if result == 'fail':
+            c.execute(
+                '''UPDATE concepts SET status = 'cracked'
+                   WHERE name = ? AND project_number = ?''',
+                (concept, project_num))
+    conn.close()
 
     if result == 'fail':
         print(
             f"\nConcept '{concept}' did NOT pass external validation.\n"
-            f"Downgrading status from 'owned' to 'cracked'."
+            f"Downgraded status from 'owned' to 'cracked'."
         )
-        c.execute(
-            '''UPDATE concepts SET status = 'cracked'
-               WHERE name = ? AND project_number = ?''',
-            (concept, project_num))
         print(
             "Claude will see this crack at next session start.\n"
             "The concept re-enters the curriculum."
@@ -103,9 +107,6 @@ def validate():
             f"\nConcept '{concept}' PASSED external validation.\n"
             f"This is the only confirmation that actually matters."
         )
-
-    conn.commit()
-    conn.close()
 
     print(
         "\nValidation recorded.\n"
