@@ -83,13 +83,6 @@ def resolve_gap():
         conn.close()
         return
 
-    # Older databases have no column for the repair notes
-    try:
-        c.execute(
-            'ALTER TABLE adversarial_exams ADD COLUMN resolution TEXT')
-    except sqlite3.OperationalError:
-        pass  # column already exists
-
     c.execute(
         '''UPDATE adversarial_exams
            SET resolved = 'yes', resolution = ?

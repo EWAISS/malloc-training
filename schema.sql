@@ -113,7 +113,7 @@ CREATE TABLE adversarial_exams (
     gap_location TEXT,
     resolved TEXT,
     completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+, resolution TEXT);
 CREATE TABLE quiz_records (
     id INTEGER PRIMARY KEY,
     project_number INTEGER,
@@ -172,4 +172,8 @@ CREATE TABLE lab_transitions (
             full_summary TEXT,
             next_lab TEXT,
             transitioned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+CREATE TABLE gap_gate_clears (
+            id INTEGER PRIMARY KEY,
+            cleared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );

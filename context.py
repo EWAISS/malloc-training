@@ -94,7 +94,7 @@ def gap_gate(c, now):
         if cleared and cleared > last_activity:
             last_activity = cleared
     except sqlite3.OperationalError:
-        pass  # gate never cleared yet
+        pass  # table missing (pre-schema.sql database) — gate never cleared
 
     try:
         last = datetime.fromisoformat(last_activity)
@@ -155,12 +155,13 @@ def clear_gap_gate():
         '~/projects/malloc-training/brain.db')
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
-    c.execute(
-        '''CREATE TABLE IF NOT EXISTS gap_gate_clears (
-            id INTEGER PRIMARY KEY,
-            cleared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )''')
-    c.execute('INSERT INTO gap_gate_clears DEFAULT VALUES')
+    try:
+        c.execute('INSERT INTO gap_gate_clears DEFAULT VALUES')
+    except sqlite3.OperationalError:
+        # Table comes from schema.sql — the database predates it
+        print("gap_gate_clears table missing. Run: python3 init_db.py")
+        conn.close()
+        sys.exit(1)
     conn.commit()
     conn.close()
     print("Gap gate cleared. Run: python3 context.py")

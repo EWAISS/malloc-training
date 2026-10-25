@@ -1,9 +1,11 @@
 """
-init_db.py — creates or migrates brain.db.
-On a fresh database: creates every table from schema.sql.
-On an existing database: adds any missing tables and columns.
-Safe to run repeatedly: tables use IF NOT EXISTS and
-columns are checked before ALTER TABLE.
+init_db.py — creates brain.db from schema.sql.
+schema.sql is the single source of truth for every table.
+On a fresh database: creates every table.
+On an existing database: adds any missing tables.
+Safe to run repeatedly: tables use IF NOT EXISTS.
+New columns need an ALTER TABLE migration here as well, since
+IF NOT EXISTS never changes a table that already exists.
 """
 import sqlite3
 import os
@@ -18,7 +20,6 @@ def migrate():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
-    # ── TABLES (from schema.sql) ─────────────────
     # sqlite3 .schema emits plain CREATE TABLE; make each one
     # a no-op when the table already exists
     with open(SCHEMA_PATH) as f:
@@ -26,34 +27,11 @@ def migrate():
     schema = re.sub(r'CREATE TABLE (?!IF NOT EXISTS)',
                     'CREATE TABLE IF NOT EXISTS ', schema)
     c.executescript(schema)
-    print("OK: all tables from schema.sql exist")
-
-    # ── COLUMN MIGRATIONS ───────────────────────
-    # Add adversarial_gap_report to transfer_exams if missing
-
-    try:
-        c.execute(
-            '''ALTER TABLE transfer_exams
-               ADD COLUMN adversarial_gap_report TEXT
-               DEFAULT 'none' ''')
-        print("Added: transfer_exams.adversarial_gap_report")
-    except sqlite3.OperationalError:
-        print("OK: transfer_exams.adversarial_gap_report exists")
-
-    # Add resolution notes to adversarial_exams if missing
-    try:
-        c.execute(
-            '''ALTER TABLE adversarial_exams
-               ADD COLUMN resolution TEXT''')
-        print("Added: adversarial_exams.resolution")
-    except sqlite3.OperationalError:
-        print("OK: adversarial_exams.resolution exists")
 
     conn.commit()
     conn.close()
 
-    print("\nMigration complete.")
-    print("All tables and columns are in place.")
+    print("OK: all tables from schema.sql exist")
     print("Run db_check.py to verify.")
 
 
