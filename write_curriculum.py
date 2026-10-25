@@ -1,3 +1,15 @@
+import sys
+
+# DISABLED — kept only as a record of how the first curriculum was saved.
+# Running it would overwrite CURRICULUM.md and CURRICULUM_REASONING.md.
+# Its reasoning text stops at project 20, so the reasoning for projects
+# 21-30 (added in commit c452592) would be lost.
+print("write_curriculum.py is disabled and will not run.")
+print("It would overwrite CURRICULUM.md and CURRICULUM_REASONING.md with")
+print("an older version, deleting the reasoning for projects 21-30.")
+print("Edit those files directly instead.")
+sys.exit(1)
+
 import os
 
 base = os.path.expanduser('~/projects/malloc-training/')
