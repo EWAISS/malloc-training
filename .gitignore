@@ -1,5 +1,6 @@
 # Generated snapshot for handing off to a new session — rebuild, don't track
 CONTEXT_PACK.md
+PROMPTS_PACK.md
 
 # Bytecode from the shared modules (prompts.py, ...)
 __pycache__/
